@@ -474,7 +474,7 @@
       "Negative Status",
       "Echo Cast"
     ],
-    "maxUses": 1,
+    "maxUses": 2,
     "dualModes": [
       "Negative status",
       "(Echo BUFF + Echo Cast)"
@@ -1488,6 +1488,7 @@
       tab1UseFilter: 'All',
       tab2AttrFilter: 'All',
       tab2MechFilter: 'All',
+      tab2HideUsed: false,
       selectedCharForClickSlot: null,
       selectedTeamForClickAssign: null,
       exportSelections: {
@@ -1516,6 +1517,7 @@
           }
           if (typeof state.tab2AttrFilter !== 'string') state.tab2AttrFilter = 'All';
           if (typeof state.tab2MechFilter !== 'string') state.tab2MechFilter = 'All';
+          if (typeof state.tab2HideUsed !== 'boolean') state.tab2HideUsed = false;
           state.ownedIds = Array.isArray(state.ownedIds)
             ? state.ownedIds.filter(id => typeof id === 'string' && Boolean(CHAR_MAP[id]))
             : CHARACTERS.map(c => c.id);
@@ -2140,7 +2142,8 @@
         .filter(c => {
           const matchAttr = state.tab2AttrFilter === 'All' || c.attribute === state.tab2AttrFilter;
           const matchMech = state.tab2MechFilter === 'All' || (c.mechanics || []).includes(state.tab2MechFilter);
-          return matchAttr && matchMech;
+          const matchHideUsed = !state.tab2HideUsed || getCharRemainingUses(c.id) > 0;
+          return matchAttr && matchMech && matchHideUsed;
         });
 
       const bossSections = [
@@ -2212,10 +2215,21 @@
                   <select onchange="state.tab2MechFilter=this.value; renderApp();" class="px-2 py-1 rounded-lg bg-slate-950 border border-slate-700 text-xs text-slate-200">
                     ${allMechanicsList.map(m => `<option value="${m}" ${state.tab2MechFilter===m?'selected':''}>${m === 'All' ? 'All Mechanics' : m}</option>`).join('')}
                   </select>
+                  <button
+                    type="button"
+                    onclick="state.tab2HideUsed=!state.tab2HideUsed; renderApp();"
+                    class="px-2.5 py-1 rounded-lg text-xs font-semibold border transition ${
+                      state.tab2HideUsed
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                        : 'bg-slate-950 text-slate-300 border-slate-700 hover:border-slate-500'
+                    }"
+                  >
+                    Hide used
+                  </button>
                 </div>
               </div>
 
-              <div class="p-3 overflow-y-auto max-h-[340px] lg:max-h-none flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div id="tab2CharacterPoolScroll" class="p-3 overflow-y-auto max-h-[340px] lg:max-h-none flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 ${ownedChars.length === 0 ? `
                   <div class="col-span-full text-center py-8 text-xs text-slate-400">
                     No characters selected in Tab 1. Switch to <strong>1. Character Checklist</strong> to toggle on your Resonators!
@@ -3592,6 +3606,9 @@
       renderNavTabs();
       const container = document.getElementById('appContainer');
       if (!container) return;
+      const prevPoolScroll = state.activeTab === 2
+        ? (document.getElementById('tab2CharacterPoolScroll')?.scrollTop ?? 0)
+        : 0;
       try {
         switch (state.activeTab) {
           case 1: container.innerHTML = renderTab1(); break;
@@ -3600,6 +3617,10 @@
           case 4: container.innerHTML = renderTab4(); break;
           case 5: container.innerHTML = renderTab5(); break;
           default: container.innerHTML = renderTab1();
+        }
+        if (state.activeTab === 2 && prevPoolScroll > 0) {
+          const nextPool = document.getElementById('tab2CharacterPoolScroll');
+          if (nextPool) nextPool.scrollTop = prevPoolScroll;
         }
       } catch (err) {
         console.error('Error rendering tab ' + state.activeTab + ':', err);

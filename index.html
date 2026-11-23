@@ -379,7 +379,10 @@
       "Unison"
     ],
     "maxUses": 1,
-    "dualModes": null,
+    "dualModes": [
+      "Negative Status",
+      "Unison"
+    ],
     "isRover": false,
     "roverAttr": null,
     "img": "./assets/characters/hsin.png"
@@ -471,8 +474,11 @@
       "Negative Status",
       "Echo Cast"
     ],
-    "maxUses": 2,
-    "dualModes": null,
+    "maxUses": 1,
+    "dualModes": [
+      "Negative status",
+      "(Echo BUFF + Echo Cast)"
+    ],
     "isRover": false,
     "roverAttr": null,
     "img": "./assets/characters/lucilla.png"
@@ -533,7 +539,10 @@
       "Tune Strain"
     ],
     "maxUses": 1,
-    "dualModes": null,
+    "dualModes": [
+      "Tune Strain",
+      "(Negative Status + Attribute BUFF)"
+    ],
     "isRover": false,
     "roverAttr": null,
     "img": "./assets/characters/denia.png"
@@ -604,7 +613,10 @@
       "Tune Rupture"
     ],
     "maxUses": 1,
-    "dualModes": null,
+    "dualModes": [
+      "Tune Rupture",
+      "Negative Status"
+    ],
     "isRover": false,
     "roverAttr": null,
     "img": "./assets/characters/aemeath.png"
@@ -683,10 +695,7 @@
       "Echo Cast"
     ],
     "maxUses": 1,
-    "dualModes": [
-      "Tune Rupture",
-      "Negative Status"
-    ],
+    "dualModes": null,
     "isRover": false,
     "roverAttr": null,
     "img": "./assets/characters/qiuyuan.png"
@@ -725,10 +734,7 @@
       "Shield"
     ],
     "maxUses": 1,
-    "dualModes": [
-      "Tune Strain",
-      "(Negative Status + Attribute BUFF)"
-    ],
+    "dualModes": null,
     "isRover": false,
     "roverAttr": null,
     "img": "./assets/characters/iuno.png"
@@ -787,10 +793,7 @@
     ],
     "mechanics": [],
     "maxUses": 1,
-    "dualModes": [
-      "Negative status",
-      "(Echo BUFF + Echo Cast)"
-    ],
+    "dualModes": null,
     "isRover": false,
     "roverAttr": null,
     "img": "./assets/characters/lupa.png"
@@ -846,10 +849,7 @@
       "Negative Status"
     ],
     "maxUses": 1,
-    "dualModes": [
-      "Negative Status",
-      "Unison"
-    ],
+    "dualModes": null,
     "isRover": false,
     "roverAttr": null,
     "img": "./assets/characters/zani.png"
@@ -1693,12 +1693,17 @@
       return Array.from(set);
     }
 
+    function hasDamageContribution(char) {
+      return Boolean(char && Array.isArray(char.damageTypes) && char.damageTypes.length > 0);
+    }
+
     function evaluateTeamAgainstBosses(team, bossesList) {
       const chars = getTeamCharacters(team);
       const teamMechs = getTeamCombinedMechanics(team);
 
       const resistedDetails = [];
       chars.forEach(c => {
+        if (!hasDamageContribution(c)) return;
         bossesList.forEach(b => {
           if (b && b.resistAttr && c.attribute === b.resistAttr) {
             resistedDetails.push({ char: c, boss: b });
@@ -2247,6 +2252,7 @@
                             <div class="font-bold text-xs sm:text-sm text-white truncate">${char.name}</div>
                             <div class="flex flex-wrap items-center gap-1 mt-0.5">
                               <span class="text-[10px] font-bold px-1.5 py-0.2 rounded ${attr.bg} ${attr.text}">${char.attribute}</span>
+                              <span class="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-slate-800/90 text-slate-200 border border-slate-700">${char.role}</span>
                               ${hasDmg ? `<span class="text-[10px] text-slate-400">${char.damageTypes.join(' / ')}</span>` : ''}
                             </div>
                           </div>
@@ -2357,7 +2363,7 @@
                               ${[0, 1, 2].map(slotIdx => {
                                 const charId = team.slots[slotIdx];
                                 const char = charId ? CHAR_MAP[charId] : null;
-                                const isResisted = char && boss.resistAttr && char.attribute === boss.resistAttr;
+                                const isResisted = char && hasDamageContribution(char) && boss.resistAttr && char.attribute === boss.resistAttr;
 
                                 if (!char) {
                                   return `
@@ -2631,7 +2637,7 @@
           <!-- Character Icons Row -->
           <div class="flex items-center gap-1.5 mb-2">
             ${chars.map(c => {
-              const resistedBoss = coveredBosses.find(b => b.resistAttr === c.attribute);
+              const resistedBoss = hasDamageContribution(c) ? coveredBosses.find(b => b.resistAttr === c.attribute) : null;
               return `
                 <div class="relative flex items-center gap-1.5 bg-slate-900/90 border ${
                   resistedBoss ? 'border-orange-500 bg-orange-950/60' : 'border-slate-800'

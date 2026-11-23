@@ -1489,6 +1489,7 @@
       tab2AttrFilter: 'All',
       tab2MechFilter: 'All',
       tab2HideUsed: false,
+      tab3HideUsed: false,
       selectedCharForClickSlot: null,
       selectedTeamForClickAssign: null,
       exportSelections: {
@@ -1518,6 +1519,7 @@
           if (typeof state.tab2AttrFilter !== 'string') state.tab2AttrFilter = 'All';
           if (typeof state.tab2MechFilter !== 'string') state.tab2MechFilter = 'All';
           if (typeof state.tab2HideUsed !== 'boolean') state.tab2HideUsed = false;
+          if (typeof state.tab3HideUsed !== 'boolean') state.tab3HideUsed = false;
           state.ownedIds = Array.isArray(state.ownedIds)
             ? state.ownedIds.filter(id => typeof id === 'string' && Boolean(CHAR_MAP[id]))
             : CHARACTERS.map(c => c.id);
@@ -2509,6 +2511,26 @@
       return state.placements.some(p => p.teamId === teamId);
     }
 
+    function getEffectivePlacementSpan(placement, roundPlacements) {
+      const sameOriginList = roundPlacements.filter(x => x.startBossIndex === placement.startBossIndex);
+      const isFinal = sameOriginList.length > 0 && sameOriginList[sameOriginList.length - 1].id === placement.id;
+      return isFinal ? placement.spanCount : 1;
+    }
+
+    function getBlockingExtensionForSlot(roundIndex, bossIndex) {
+      const roundPlacements = state.placements.filter(p => p.roundIndex === roundIndex);
+      for (const p of roundPlacements) {
+        const effectiveSpan = getEffectivePlacementSpan(p, roundPlacements);
+        if (effectiveSpan > 1) {
+          const endBossIndex = p.startBossIndex + effectiveSpan - 1;
+          if (bossIndex > p.startBossIndex && bossIndex < endBossIndex) {
+            return p;
+          }
+        }
+      }
+      return null;
+    }
+
     function assignTeamToGrid(teamId, roundIndex, startBossIndex) {
       const team = state.teams.find(t => t.id === teamId);
       if (!team || !isTeamComplete(team)) {
@@ -2517,6 +2539,12 @@
       }
       if (isTeamPlacedInTab3(teamId)) {
         showToast(`${team.name} is already assigned! Each set team can only be used once.`);
+        return;
+      }
+      const blockingPlacement = getBlockingExtensionForSlot(roundIndex, startBossIndex);
+      if (blockingPlacement) {
+        const blockingTeam = state.teams.find(t => t.id === blockingPlacement.teamId);
+        showToast(`Blocked: Already cleared by ${blockingTeam ? blockingTeam.name : 'extended team'}. Only the end slot of an extension can accept more teams.`);
         return;
       }
       state.placements.push({
@@ -2562,16 +2590,26 @@
     function updatePlacementSpan(placementId, delta) {
       const p = state.placements.find(item => item.id === placementId);
       if (!p) return;
-      const cellPlacements = state.placements.filter(
-        item => item.roundIndex === p.roundIndex && item.startBossIndex === p.startBossIndex
-      );
+      const roundPlacements = state.placements.filter(item => item.roundIndex === p.roundIndex);
+      const cellPlacements = roundPlacements.filter(item => item.startBossIndex === p.startBossIndex);
       const isFinalInCell = cellPlacements.length > 0 && cellPlacements[cellPlacements.length - 1].id === p.id;
       if (delta > 0 && !isFinalInCell) {
         showToast('Only the final team clearing a boss can extend to consecutive bosses.');
         return;
       }
       const maxSpan = ALL_ROUND_COLS.length - p.startBossIndex;
-      p.spanCount = Math.max(1, Math.min(maxSpan, p.spanCount + delta));
+      const nextSpan = Math.max(1, Math.min(maxSpan, p.spanCount + delta));
+      if (delta > 0 && nextSpan > p.spanCount) {
+        const currentEndBoss = p.startBossIndex + p.spanCount - 1;
+        if (currentEndBoss > p.startBossIndex) {
+          const hasTeamsInCurrentEnd = roundPlacements.some(item => item.startBossIndex === currentEndBoss);
+          if (hasTeamsInCurrentEnd) {
+            showToast(`Cannot extend past ${ALL_ROUND_COLS[currentEndBoss].name} while teams are assigned in that slot.`);
+            return;
+          }
+        }
+      }
+      p.spanCount = nextSpan;
       saveState();
       renderApp();
     }
@@ -2737,13 +2775,16 @@
     }
 
     function renderTab3() {
-      const formedTeams = state.teams.filter(isTeamComplete);
+      const allFormedTeams = state.teams.filter(isTeamComplete);
+      const visibleFormedTeams = state.tab3HideUsed
+        ? allFormedTeams.filter(t => !isTeamPlacedInTab3(t.id))
+        : allFormedTeams;
 
       return `
-        <div class="space-y-4">
+        <div class="flex flex-col gap-3 h-[calc(100vh-132px)] min-h-[580px]">
           <!-- Dismissible Beginner Tip Message Box (Restored) -->
           ${state.showRoundTip ? `
-            <div class="p-3.5 rounded-2xl bg-gradient-to-r from-sky-500/15 via-slate-900 to-emerald-500/15 border border-sky-500/40 flex items-start justify-between gap-3">
+            <div class="shrink-0 p-3 rounded-2xl bg-gradient-to-r from-sky-500/15 via-slate-900 to-emerald-500/15 border border-sky-500/40 flex items-start justify-between gap-3">
               <div class="flex items-start gap-3">
                 <div class="w-8 h-8 rounded-xl bg-sky-500/20 text-sky-300 flex items-center justify-center font-bold shrink-0">💡</div>
                 <div class="text-xs text-slate-200 leading-relaxed">
@@ -2756,90 +2797,112 @@
               </button>
             </div>
           ` : `
-            <div class="flex justify-end">
+            <div class="shrink-0 flex justify-end">
               <button onclick="state.showRoundTip = true; saveState(); renderApp();" class="text-xs text-sky-400 hover:underline">
                 💡 Show Round Strategy Tip
               </button>
             </div>
           `}
 
-          <!-- Set Teams Palette -->
-          <div class="p-3.5 rounded-2xl bg-[#121722] border border-slate-800 space-y-2.5">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h2 class="text-sm font-bold text-white">Formed Teams Available for Deployment (1 Use per Set Team)</h2>
-                <p class="text-[11px] text-slate-400">Drag a team into any Boss, Matrix Mimic &amp; Round slot below—or click a team then click a cell.</p>
-              </div>
-              <div class="flex items-center gap-2">
-                ${state.selectedTeamForClickAssign ? `
-                  <button onclick="state.selectedTeamForClickAssign=null; renderApp();" class="text-xs px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-bold animate-pulse">
-                    Selected: ${state.teams.find(t=>t.id===state.selectedTeamForClickAssign)?.name} (Click Grid Cell) ✕
+          <!-- Non-Overlapping 4:6 Split Container for Available Teams (40%) & Boss Round Planning (60%) -->
+          <div class="flex-1 min-h-0 flex flex-col gap-3">
+            <!-- TOP PANEL (40%): Formed Teams Available for Deployment -->
+            <div class="basis-[40%] min-h-0 flex flex-col rounded-2xl bg-[#121722] border border-slate-800 shadow-xl overflow-hidden">
+              <div class="p-3 border-b border-slate-800 bg-[#151b28] flex flex-wrap items-center justify-between gap-2 shrink-0">
+                <div>
+                  <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                    <span>Formed Teams Available for Deployment (1 Use per Set Team)</span>
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">${visibleFormedTeams.length}</span>
+                  </h2>
+                  <p class="text-[11px] text-slate-400">Drag a team into any Boss, Matrix Mimic &amp; Round slot below—or click a team then click a cell.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                  ${state.selectedTeamForClickAssign ? `
+                    <button onclick="state.selectedTeamForClickAssign=null; renderApp();" class="text-xs px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-bold animate-pulse">
+                      Selected: ${state.teams.find(t=>t.id===state.selectedTeamForClickAssign)?.name} (Click Grid Cell) ✕
+                    </button>
+                  ` : ''}
+                  <button
+                    type="button"
+                    onclick="state.tab3HideUsed=!state.tab3HideUsed; renderApp();"
+                    class="px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition ${
+                      state.tab3HideUsed
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                        : 'bg-slate-950 text-slate-300 border-slate-700 hover:border-slate-500'
+                    }"
+                  >
+                    Hide used teams
                   </button>
-                ` : ''}
-                ${shareBtnHTML()}
+                  ${shareBtnHTML()}
+                </div>
+              </div>
+
+              <div id="tab3TeamPoolScroll" class="p-3 overflow-y-auto flex-1 min-h-0">
+                ${allFormedTeams.length === 0 ? `
+                  <div class="p-4 rounded-xl bg-slate-950/70 border border-dashed border-slate-800 text-center text-xs text-slate-400">
+                    No teams formed yet! Go to <strong>Tab 2: Team Formation</strong> and slot Resonators into teams first.
+                  </div>
+                ` : visibleFormedTeams.length === 0 ? `
+                  <div class="p-4 rounded-xl bg-slate-950/70 border border-dashed border-slate-800 text-center text-xs text-slate-400">
+                    All formed teams are currently assigned. Click <strong>Hide used teams</strong> to view assigned teams.
+                  </div>
+                ` : `
+                  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                    ${visibleFormedTeams.map(team => {
+                      const placed = isTeamPlacedInTab3(team.id);
+                      const chars = getTeamCharacters(team);
+                      const mechs = getTeamCombinedMechanics(team);
+                      const selected = state.selectedTeamForClickAssign === team.id;
+
+                      return `
+                        <div
+                          draggable="${!placed}"
+                          ondragstart="handleTeamPaletteDragStart(event, '${team.id}')"
+                          onclick="if(!${placed}){ state.selectedTeamForClickAssign = (${selected} ? null : '${team.id}'); renderApp(); }"
+                          class="rounded-xl p-2.5 border transition select-none ${
+                            placed
+                              ? 'bg-slate-950/80 border-slate-800 opacity-45 cursor-not-allowed'
+                              : selected
+                                ? 'bg-amber-500/15 border-amber-400 ring-2 ring-amber-400/50 cursor-pointer'
+                                : 'bg-[#181f2e] border-slate-700 hover:border-amber-500/60 cursor-grab active:cursor-grabbing'
+                          }"
+                        >
+                          <div class="flex items-center justify-between gap-1 mb-1.5">
+                            <span class="font-bold text-xs text-white truncate">${team.name}</span>
+                            <span class="text-[10px] font-bold px-1.5 py-0.2 rounded ${
+                              placed ? 'bg-slate-800 text-slate-400' : 'bg-emerald-500/20 text-emerald-300'
+                            }">
+                              ${placed ? 'Assigned' : 'Ready (1/1)'}
+                            </span>
+                          </div>
+                          <div class="flex items-center gap-1.5 mb-1.5">
+                            ${chars.map(c => renderCharacterAvatarHTML(c, 'w-8 h-8')).join('')}
+                          </div>
+                          <div class="flex flex-wrap gap-1">
+                            ${mechs.map(m => `<span class="text-[9px] px-1.5 py-0.2 rounded bg-slate-900 text-slate-300 border border-slate-800">${m}</span>`).join('')}
+                          </div>
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                `}
               </div>
             </div>
 
-            ${formedTeams.length === 0 ? `
-              <div class="p-4 rounded-xl bg-slate-950/70 border border-dashed border-slate-800 text-center text-xs text-slate-400">
-                No teams formed yet! Go to <strong>Tab 2: Team Formation</strong> and slot Resonators into teams first.
-              </div>
-            ` : `
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                ${formedTeams.map(team => {
-                  const placed = isTeamPlacedInTab3(team.id);
-                  const chars = getTeamCharacters(team);
-                  const mechs = getTeamCombinedMechanics(team);
-                  const selected = state.selectedTeamForClickAssign === team.id;
-
-                  return `
-                    <div
-                      draggable="${!placed}"
-                      ondragstart="handleTeamPaletteDragStart(event, '${team.id}')"
-                      onclick="if(!${placed}){ state.selectedTeamForClickAssign = (${selected} ? null : '${team.id}'); renderApp(); }"
-                      class="rounded-xl p-2.5 border transition select-none ${
-                        placed
-                          ? 'bg-slate-950/80 border-slate-800 opacity-45 cursor-not-allowed'
-                          : selected
-                            ? 'bg-amber-500/15 border-amber-400 ring-2 ring-amber-400/50 cursor-pointer'
-                            : 'bg-[#181f2e] border-slate-700 hover:border-amber-500/60 cursor-grab active:cursor-grabbing'
-                      }"
-                    >
-                      <div class="flex items-center justify-between gap-1 mb-1.5">
-                        <span class="font-bold text-xs text-white truncate">${team.name}</span>
-                        <span class="text-[10px] font-bold px-1.5 py-0.2 rounded ${
-                          placed ? 'bg-slate-800 text-slate-400' : 'bg-emerald-500/20 text-emerald-300'
-                        }">
-                          ${placed ? 'Assigned' : 'Ready (1/1)'}
-                        </span>
-                      </div>
-                      <div class="flex items-center gap-1.5 mb-1.5">
-                        ${chars.map(c => renderCharacterAvatarHTML(c, 'w-8 h-8')).join('')}
-                      </div>
-                      <div class="flex flex-wrap gap-1">
-                        ${mechs.map(m => `<span class="text-[9px] px-1.5 py-0.2 rounded bg-slate-900 text-slate-300 border border-slate-800">${m}</span>`).join('')}
-                      </div>
-                    </div>
-                  `;
-                }).join('')}
-              </div>
-            `}
-          </div>
-
-          <!-- Matrix Schedule Table: 4 Seasonal Bosses + 5th Matrix Mimic Column -->
-          <div class="rounded-2xl bg-[#121722] border border-slate-800 overflow-x-auto shadow-xl">
-            <table class="w-full min-w-[1120px] border-collapse">
-              <thead>
-                <tr class="bg-[#161d2b] border-b border-slate-800">
-                  <th class="w-32 p-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400 border-r border-slate-800">
+            <!-- BOTTOM PANEL (60%): Boss Round Planning (Boss Header Frozen at Top, Rounds Scroll Internally) -->
+            <div class="basis-[60%] min-h-0 flex flex-col rounded-2xl bg-[#121722] border border-slate-800 shadow-xl overflow-hidden">
+              <div class="overflow-x-auto flex-1 flex flex-col min-h-0">
+                <!-- Frozen Boss Header Row (shrink-0 inside flex-col panel) -->
+                <div class="flex min-w-[1120px] bg-[#161d2b] border-b border-slate-800 shrink-0">
+                  <div class="w-32 shrink-0 p-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400 border-r border-slate-800 flex items-center">
                     Round / Mult
-                  </th>
+                  </div>
                   ${ALL_ROUND_COLS.map(boss => `
-                    <th class="p-3 text-left border-r last:border-r-0 border-slate-800 w-1/5">
+                    <div class="flex-1 min-w-0 p-3 text-left border-r last:border-r-0 border-slate-800">
                       <div class="flex items-center gap-2">
                         ${renderBossAvatarHTML(boss, 'w-9 h-9')}
-                        <div>
-                          <div class="font-display font-bold text-base text-white">${boss.name}</div>
+                        <div class="min-w-0">
+                          <div class="font-display font-bold text-base text-white truncate">${boss.name}</div>
                           <div class="flex flex-wrap items-center gap-1 mt-0.5">
                             ${boss.resistAttr ? `
                               <span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-orange-500/15 text-orange-300 border border-orange-500/30">
@@ -2858,71 +2921,99 @@
                           </div>
                         </div>
                       </div>
-                    </th>
+                    </div>
                   `).join('')}
-                </tr>
-              </thead>
-              <tbody>
-                ${Array.from({ length: state.roundsCount }).map((_, roundIdx) => {
-                  const roundPlacements = state.placements.filter(p => p.roundIndex === roundIdx);
+                </div>
 
-                  return `
-                    <tr class="border-b border-slate-800/80 align-top">
-                      <td class="p-3 bg-[#141a26] border-r border-slate-800">
-                        <div class="font-display font-bold text-base text-amber-300">Round ${roundIdx + 1}</div>
-                        <div class="text-[11px] font-semibold text-slate-400 mt-0.5">${getRoundMultiplierLabel(roundIdx)}</div>
-                        <div class="text-[10px] text-slate-500 mt-1">
-                          ${roundIdx === 0 ? 'Use filler/opener teams' : 'Deploy core DPS teams'}
+                <!-- Internally Scrollable Round Rows Container -->
+                <div id="tab3RoundsScroll" class="overflow-y-auto flex-1 min-h-0 divide-y divide-slate-800/80 min-w-[1120px]">
+                  ${Array.from({ length: state.roundsCount }).map((_, roundIdx) => {
+                    const roundPlacements = state.placements.filter(p => p.roundIndex === roundIdx);
+
+                    return `
+                      <div class="flex items-stretch">
+                        <div class="w-32 shrink-0 p-3 bg-[#141a26] border-r border-slate-800">
+                          <div class="font-display font-bold text-base text-amber-300">Round ${roundIdx + 1}</div>
+                          <div class="text-[11px] font-semibold text-slate-400 mt-0.5">${getRoundMultiplierLabel(roundIdx)}</div>
+                          <div class="text-[10px] text-slate-500 mt-1">
+                            ${roundIdx === 0 ? 'Use filler/opener teams' : 'Deploy core DPS teams'}
+                          </div>
                         </div>
-                      </td>
 
-                      ${ALL_ROUND_COLS.map((boss, bossIdx) => {
-                        const startingHere = roundPlacements.filter(p => p.startBossIndex === bossIdx);
-                        const spanningAcross = roundPlacements.filter((p) => {
-                          const sameOriginList = roundPlacements.filter(x => x.startBossIndex === p.startBossIndex);
-                          const isFinal = sameOriginList.length > 0 && sameOriginList[sameOriginList.length - 1].id === p.id;
-                          const effectiveSpan = isFinal ? p.spanCount : 1;
-                          return p.startBossIndex < bossIdx && (p.startBossIndex + effectiveSpan) > bossIdx;
-                        });
+                        ${ALL_ROUND_COLS.map((boss, bossIdx) => {
+                          const startingHere = roundPlacements.filter(p => p.startBossIndex === bossIdx);
+                          const spanningAcross = roundPlacements.filter((p) => {
+                            const effectiveSpan = getEffectivePlacementSpan(p, roundPlacements);
+                            return p.startBossIndex < bossIdx && (p.startBossIndex + effectiveSpan) > bossIdx;
+                          });
+                          const isBlockedMiddleSlot = spanningAcross.some((sp) => {
+                            const effectiveSpan = getEffectivePlacementSpan(sp, roundPlacements);
+                            return bossIdx < (sp.startBossIndex + effectiveSpan - 1);
+                          });
 
-                        return `
-                          <td
-                            ondragover="event.preventDefault(); this.classList.add('drag-over-target');"
-                            ondragleave="this.classList.remove('drag-over-target');"
-                            ondrop="handleGridCellDrop(event, ${roundIdx}, ${bossIdx})"
-                            onclick="handleGridCellClick(${roundIdx}, ${bossIdx})"
-                            class="p-2.5 border-r last:border-r-0 border-slate-800/80 min-h-[140px] transition ${
-                              state.selectedTeamForClickAssign ? 'hover:bg-amber-500/10 cursor-pointer' : ''
-                            }"
-                          >
-                            <div class="space-y-2">
-                              ${spanningAcross.map(sp => {
-                                const spTeam = state.teams.find(t => t.id === sp.teamId);
-                                return `
-                                  <div class="px-2.5 py-1.5 rounded-lg bg-sky-500/15 border border-dashed border-sky-400/60 text-[11px] text-sky-200 flex items-center justify-between">
-                                    <span>↳ Continued: <strong>${spTeam ? spTeam.name : 'Team'}</strong></span>
-                                    <span class="text-[10px] text-sky-400">Carryover</span>
+                          return `
+                            <div
+                              ${isBlockedMiddleSlot ? '' : `
+                                ondragover="event.preventDefault(); this.classList.add('drag-over-target');"
+                                ondragleave="this.classList.remove('drag-over-target');"
+                                ondrop="handleGridCellDrop(event, ${roundIdx}, ${bossIdx})"
+                                onclick="handleGridCellClick(${roundIdx}, ${bossIdx})"
+                              `}
+                              class="flex-1 min-w-0 p-2.5 border-r last:border-r-0 border-slate-800/80 min-h-[140px] transition ${
+                                isBlockedMiddleSlot
+                                  ? 'bg-emerald-950/15 cursor-not-allowed'
+                                  : state.selectedTeamForClickAssign
+                                    ? 'hover:bg-amber-500/10 cursor-pointer'
+                                    : ''
+                              }"
+                            >
+                              <div class="space-y-2">
+                                ${spanningAcross.map(sp => {
+                                  const spTeam = state.teams.find(t => t.id === sp.teamId);
+                                  const effectiveSpan = getEffectivePlacementSpan(sp, roundPlacements);
+                                  const isMiddleClear = bossIdx < (sp.startBossIndex + effectiveSpan - 1);
+                                  return `
+                                    <div class="px-2.5 py-1.5 rounded-lg ${
+                                      isMiddleClear
+                                        ? 'bg-emerald-500/15 border border-emerald-500/45 text-emerald-200'
+                                        : 'bg-sky-500/15 border border-dashed border-sky-400/60 text-sky-200'
+                                    } text-[11px] flex items-center justify-between gap-1.5">
+                                      <span class="truncate">↳ Continued: <strong>${spTeam ? spTeam.name : 'Team'}</strong></span>
+                                      ${isMiddleClear ? `
+                                        <span class="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shrink-0">
+                                          Clears
+                                        </span>
+                                      ` : `
+                                        <span class="text-[10px] text-sky-400 shrink-0">Carryover</span>
+                                      `}
+                                    </div>
+                                  `;
+                                }).join('')}
+
+                                ${startingHere.map((p, idx) => renderAssignedTeamCard(p, false, idx === startingHere.length - 1)).join('')}
+
+                                ${isBlockedMiddleSlot ? `
+                                  <div class="py-2 px-2 rounded-xl border border-emerald-500/25 bg-emerald-950/20 text-center text-[10.5px] text-emerald-300/80 select-none">
+                                    Cleared by extended team
                                   </div>
-                                `;
-                              }).join('')}
-
-                              ${startingHere.map((p, idx) => renderAssignedTeamCard(p, false, idx === startingHere.length - 1)).join('')}
-
-                              <div class="py-2.5 px-2 rounded-xl border border-dashed border-slate-800 text-center text-[11px] text-slate-500 hover:border-slate-600 transition">
-                                + Drop Team Here
+                                ` : `
+                                  <div class="py-2.5 px-2 rounded-xl border border-dashed border-slate-800 text-center text-[11px] text-slate-500 hover:border-slate-600 transition">
+                                    + Drop Team Here
+                                  </div>
+                                `}
                               </div>
                             </div>
-                          </td>
-                        `;
-                      }).join('')}
-                    </tr>
-                  `;
-                }).join('')}
-              </tbody>
-            </table>
+                          `;
+                        }).join('')}
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div class="flex items-center justify-between">
+          <div class="shrink-0 flex items-center justify-between">
             <button onclick="addRoundRow()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition">
               + Add Round Row
             </button>
@@ -3127,9 +3218,20 @@
                               <div class="space-y-2">
                                 ${spanningAcross.map(sp => {
                                   const spTeam = state.teams.find(t => t.id === sp.teamId);
+                                  const effectiveSpan = getEffectivePlacementSpan(sp, roundPlacements);
+                                  const isMiddleClear = bossIdx < (sp.startBossIndex + effectiveSpan - 1);
                                   return `
-                                    <div class="px-2.5 py-1.5 rounded-lg bg-sky-500/15 border border-dashed border-sky-400/60 text-[11px] text-sky-200">
-                                      ↳ Continued: <strong>${spTeam ? spTeam.name : 'Team'}</strong>
+                                    <div class="px-2.5 py-1.5 rounded-lg ${
+                                      isMiddleClear
+                                        ? 'bg-emerald-500/15 border border-emerald-500/45 text-emerald-200'
+                                        : 'bg-sky-500/15 border border-dashed border-sky-400/60 text-sky-200'
+                                    } text-[11px] flex items-center justify-between gap-1.5">
+                                      <span class="truncate">↳ Continued: <strong>${spTeam ? spTeam.name : 'Team'}</strong></span>
+                                      ${isMiddleClear ? `
+                                        <span class="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shrink-0">
+                                          Clears
+                                        </span>
+                                      ` : ''}
                                     </div>
                                   `;
                                 }).join('')}
@@ -3609,6 +3711,12 @@
       const prevPoolScroll = state.activeTab === 2
         ? (document.getElementById('tab2CharacterPoolScroll')?.scrollTop ?? 0)
         : 0;
+      const prevTab3PoolScroll = state.activeTab === 3
+        ? (document.getElementById('tab3TeamPoolScroll')?.scrollTop ?? 0)
+        : 0;
+      const prevTab3RoundsScroll = state.activeTab === 3
+        ? (document.getElementById('tab3RoundsScroll')?.scrollTop ?? 0)
+        : 0;
       try {
         switch (state.activeTab) {
           case 1: container.innerHTML = renderTab1(); break;
@@ -3621,6 +3729,14 @@
         if (state.activeTab === 2 && prevPoolScroll > 0) {
           const nextPool = document.getElementById('tab2CharacterPoolScroll');
           if (nextPool) nextPool.scrollTop = prevPoolScroll;
+        }
+        if (state.activeTab === 3 && prevTab3PoolScroll > 0) {
+          const nextTab3Pool = document.getElementById('tab3TeamPoolScroll');
+          if (nextTab3Pool) nextTab3Pool.scrollTop = prevTab3PoolScroll;
+        }
+        if (state.activeTab === 3 && prevTab3RoundsScroll > 0) {
+          const nextTab3Rounds = document.getElementById('tab3RoundsScroll');
+          if (nextTab3Rounds) nextTab3Rounds.scrollTop = prevTab3RoundsScroll;
         }
       } catch (err) {
         console.error('Error rendering tab ' + state.activeTab + ':', err);

@@ -1,0 +1,3619 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WuWa v3.8 Endstate Matrix Planner — Adversity Vanguard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Rajdhani', 'sans-serif'],
+          },
+          colors: {
+            obsidian: '#0b0e14',
+            panel: '#121722',
+            card: '#181f2e',
+            borderline: '#263147',
+            gold: '#eab308',
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body {
+      background-color: #0b0e14;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b0e14;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #28344b;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3b4c6e;
+    }
+    .font-display {
+      font-family: 'Rajdhani', sans-serif;
+    }
+    .drag-over-target {
+      outline: 2px dashed #eab308 !important;
+      background-color: rgba(234, 179, 8, 0.08) !important;
+    }
+    .glass-header {
+      background: rgba(11, 14, 20, 0.88);
+      backdrop-filter: blur(12px);
+    }
+    @keyframes pulseBorder {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.45); }
+      50% { box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.15); }
+    }
+    .resisted-alert {
+      animation: pulseBorder 2.4s infinite;
+    }
+    .avatar-box.img-fallback img {
+      display: none;
+    }
+    .avatar-box.img-fallback .fallback-badge {
+      display: flex;
+    }
+    .fallback-badge {
+      display: none;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
+
+  <!-- TOP NAVIGATION BAR -->
+  <header class="sticky top-0 z-40 glass-header border-b border-slate-800/90">
+    <div class="max-w-[1600px] mx-auto px-3 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2">
+      <!-- Brand -->
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-yellow-600 flex items-center justify-center text-slate-950 font-display font-bold text-xl shadow-lg shadow-amber-500/20">
+          W
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-display font-bold text-lg sm:text-xl tracking-wide text-white leading-none">
+              ENDSTATE MATRIX PLANNER
+            </h1>
+            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+              v3.8 • S2P4
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden sm:block">
+            New-Player Friendly Roster, Synergy &amp; Round Optimizer
+          </p>
+        </div>
+      </div>
+
+      <!-- Right Controls: Save indicator, Guide, Reset (No Share button in top bar) -->
+      <div class="flex items-center gap-2">
+        <span id="saveIndicator" class="text-[11px] text-emerald-400/90 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full hidden sm:inline-flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Auto-Saved
+        </span>
+        <button onclick="openWelcomeModal(true)" class="px-2.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition">
+          <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span>Guide</span>
+        </button>
+        <button onclick="openResetModal()" class="px-2.5 py-1.5 rounded-lg bg-rose-950/50 hover:bg-rose-900/60 text-rose-300 border border-rose-800/50 text-xs font-medium transition">
+          Reset
+        </button>
+      </div>
+    </div>
+
+    <!-- 5-TAB NAVIGATION -->
+    <nav class="max-w-[1600px] mx-auto px-3 sm:px-6 pb-2 flex items-center justify-between gap-2 overflow-x-auto">
+      <div class="flex items-center gap-1.5 min-w-max" id="tabButtonsContainer">
+        <!-- Rendered by JS -->
+      </div>
+    </nav>
+  </header>
+
+  <!-- MAIN CONTENT WORKSPACE -->
+  <main id="appContainer" class="flex-1 max-w-[1600px] w-full mx-auto px-3 sm:px-6 py-4">
+    <!-- Active Tab View injected here -->
+  </main>
+
+  <!-- ENTRY WELCOME / NEW PLAYER GUIDE MODAL (Restored from initial version) -->
+  <div id="welcomeModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div class="bg-[#121722] border border-slate-700 rounded-2xl max-w-2xl w-full p-5 sm:p-7 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+      <div class="flex items-start justify-between gap-3 mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          </div>
+          <div>
+            <span class="text-xs font-semibold uppercase tracking-wider text-amber-400">Welcome, Rover!</span>
+            <h2 class="text-xl sm:text-2xl font-display font-bold text-white">Wuthering Waves v3.8 Endstate Matrix Planner</h2>
+          </div>
+        </div>
+        <button onclick="closeWelcomeModal()" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <p class="text-sm text-slate-300 leading-relaxed mb-4">
+        This interactive planner helps you strategize your teams, energy limits, and boss order for <strong class="text-white">Endstate Matrix (Season 2 Phase 4: Adversity Vanguard)</strong>. It is specifically built to be <strong class="text-emerald-400">friendly for new players</strong>—automatically flagging boss resistances and highlighting winning mechanic synergies!
+      </p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5 text-xs">
+        <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800">
+          <div class="font-bold text-amber-300 mb-1">1. Character Checklist &amp; Vigor Limits</div>
+          <p class="text-slate-400 leading-relaxed">Select the Resonators you own (61 total). Most characters have <strong>1 Use</strong>, while 2-Cost Support/Healer characters have <strong>2 Uses</strong>. In v3.8, <strong class="text-sky-300">Lucilla</strong> receives <strong>+1 Seasonal Bonus Use (2 Total)</strong>.</p>
+        </div>
+        <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800">
+          <div class="font-bold text-emerald-300 mb-1">2. Smart Synergy &amp; Resistance Alerts</div>
+          <p class="text-slate-400 leading-relaxed">Matching a boss's preferred mechanic lights up in <span class="text-emerald-400 font-semibold">Green</span>. Bringing a resisted element lights up in <span class="text-orange-400 font-semibold">Orange (!)</span> so you never waste a run.</p>
+        </div>
+        <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800">
+          <div class="font-bold text-sky-300 mb-1">3. Round Planning &amp; Multi-Boss Spans</div>
+          <p class="text-slate-400 leading-relaxed">Assign your formed teams across Rounds &amp; Bosses (including the 5th Matrix Mimic column). Only the final clearing team in a boss slot can extend across consecutive bosses!</p>
+        </div>
+        <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800">
+          <div class="font-bold text-purple-300 mb-1">4. Score Tracking &amp; Instant Sharing</div>
+          <p class="text-slate-400 leading-relaxed">Log your actual scores, view your Top 3 teams, export/import setups with friends, or click <strong>Share as Image</strong> on Tabs 1–4 to generate a summary card.</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
+        <label class="flex items-center gap-2 text-xs text-slate-400 cursor-pointer select-none">
+          <input type="checkbox" id="dontShowWelcomeAgain" class="rounded bg-slate-800 border-slate-600 text-amber-500 focus:ring-amber-500" />
+          <span>Don't show this welcome guide automatically next time</span>
+        </label>
+        <button onclick="closeWelcomeModal()" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm transition shadow-lg shadow-amber-500/20">
+          Start Planning
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESISTED DAMAGE POPOVER / MODAL -->
+  <div id="resistAlertModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-xs p-4" onclick="closeResistModal()">
+    <div class="bg-[#181f2e] border-2 border-orange-500 rounded-2xl max-w-md w-full p-5 shadow-2xl" onclick="event.stopPropagation()">
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-10 h-10 rounded-full bg-orange-500/20 border border-orange-500 flex items-center justify-center text-orange-400 font-bold text-xl">
+          !
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-orange-400">Resisted damage type</h3>
+          <p id="resistModalSubtitle" class="text-xs text-slate-300"></p>
+        </div>
+      </div>
+      <p id="resistModalBody" class="text-xs text-slate-300 leading-relaxed bg-slate-900/80 p-3 rounded-xl border border-slate-800 mt-3 mb-4"></p>
+      <div class="flex justify-end">
+        <button onclick="closeResistModal()" class="px-4 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-400 text-slate-950 font-semibold text-xs">
+          Got it
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SNAPSHOT SHARE IMAGE MODAL (Preview before download, restored from initial version) -->
+  <div id="snapshotModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4" onclick="closeSnapshotModal()">
+    <div class="bg-[#121722] border border-slate-700 rounded-2xl max-w-4xl w-full p-5 shadow-2xl max-h-[92vh] flex flex-col" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div>
+          <h3 class="text-lg font-display font-bold text-white">Tab Summary Snapshot</h3>
+          <p class="text-xs text-slate-400">Preview your summary image below, then copy or download as PNG.</p>
+        </div>
+        <button onclick="closeSnapshotModal()" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="my-4 overflow-auto flex-1 flex items-center justify-center bg-slate-950/90 rounded-xl p-3 border border-slate-800">
+        <img id="snapshotPreviewImg" alt="Tab Summary Snapshot" class="max-w-full h-auto rounded-lg shadow-xl" />
+      </div>
+      <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800">
+        <span id="snapshotStatusMsg" class="text-xs text-emerald-400"></span>
+        <div class="flex items-center gap-2">
+          <button onclick="copySnapshotToClipboard()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 text-xs font-semibold flex items-center gap-1.5 transition">
+            <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            Copy Image
+          </button>
+          <button onclick="downloadSnapshotPNG()" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Download PNG
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESET CONFIRMATION MODAL -->
+  <div id="resetModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 backdrop-blur-xs p-4" onclick="closeResetModal()">
+    <div class="bg-[#181f2e] border border-rose-800/70 rounded-2xl max-w-md w-full p-5 shadow-2xl" onclick="event.stopPropagation()">
+      <h3 class="text-lg font-bold text-white mb-2">Reset Planner Data?</h3>
+      <p class="text-xs text-slate-300 leading-relaxed mb-4">
+        This will clear your saved roster selections, formed teams, round placements, and recorded scores. You can export a backup in Tab 5 first if needed.
+      </p>
+      <div class="flex justify-end gap-2">
+        <button onclick="closeResetModal()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium">Cancel</button>
+        <button onclick="confirmResetAll()" class="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold">Reset Everything</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toastBanner" class="fixed bottom-4 right-4 z-50 pointer-events-none opacity-0 translate-y-2 transition-all duration-200 bg-slate-900 border border-amber-500/50 text-white px-4 py-2.5 rounded-xl shadow-2xl text-xs font-medium flex items-center gap-2">
+    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+    <span id="toastText">Notification</span>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. GAME DATA: 61 CHARACTERS FROM SPREADSHEET + SEASON 2 PHASE 4 BOSSES
+    // =========================================================================
+    const ATTRIBUTES = {
+      Glacio:  { hex: '#38bdf8', bg: 'bg-sky-500/15',     text: 'text-sky-300',     border: 'border-sky-500/40',     darkHex: '#0c4a6e' },
+      Fusion:  { hex: '#f97316', bg: 'bg-orange-500/15',  text: 'text-orange-300',  border: 'border-orange-500/40',  darkHex: '#7c2d12' },
+      Electro: { hex: '#a855f7', bg: 'bg-purple-500/15',  text: 'text-purple-300',  border: 'border-purple-500/40',  darkHex: '#581c87' },
+      Aero:    { hex: '#10b981', bg: 'bg-emerald-500/15', text: 'text-emerald-300', border: 'border-emerald-500/40', darkHex: '#064e3b' },
+      Spectro: { hex: '#facc15', bg: 'bg-yellow-500/15',  text: 'text-yellow-300',  border: 'border-yellow-500/40',  darkHex: '#713f12' },
+      Havoc:   { hex: '#ec4899', bg: 'bg-pink-500/15',    text: 'text-pink-300',    border: 'border-pink-500/40',    darkHex: '#831843' },
+    };
+
+    const SEASON_BOSSES = [
+      {
+        id: 'feilian',
+        name: 'Feilian Beringal',
+        img: './assets/bosses/feilian-beringal.png',
+        title: 'Crisis Response Protocol',
+        resistAttr: 'Aero',
+        mechanic: 'Tune Break',
+        description: 'Resists Aero DMG. Triggering Tune Rupture & Tunability-Shifting inflicts massive bonus DMG.',
+        isMimic: false
+      },
+      {
+        id: 'denia',
+        name: 'Denia',
+        img: './assets/bosses/denia.png',
+        title: 'Rime & Erosion Protocol',
+        resistAttr: 'Fusion',
+        mechanic: 'Negative Status',
+        description: 'Resists Fusion DMG. Stacking Negative Statuses amplifies DMG taken and triggers elemental bursts.',
+        isMimic: false
+      },
+      {
+        id: 'crownless',
+        name: 'Crownless',
+        img: './assets/bosses/crownless.png',
+        title: 'Resonant Unison Protocol',
+        resistAttr: 'Havoc',
+        mechanic: 'Unison',
+        description: 'Resists Havoc DMG. Triggering Unison Response grants +55% Total DMG amplification for 30s.',
+        isMimic: false
+      },
+      {
+        id: 'sigillum',
+        name: 'Sigillum',
+        img: './assets/bosses/sigillum.png',
+        title: 'Bulwark Echo Protocol',
+        resistAttr: 'Spectro',
+        mechanic: 'Echo Cast',
+        description: 'Resists Spectro DMG. Echo Cast & Echo Skill DMG are boosted by +65%.',
+        isMimic: false
+      }
+    ];
+
+    const MIMIC_BOSS = {
+      id: 'matrix-mimic',
+      name: 'Matrix Mimic',
+      img: './assets/bosses/matrix-mimic.png',
+      title: 'Persistent Matrix Mimic',
+      resistAttr: null,
+      mechanic: null,
+      description: 'Persistent seasonal mimic stage with no attribute resistance and no special mechanics.',
+      isMimic: true
+    };
+
+    const ALL_ROUND_COLS = [...SEASON_BOSSES, MIMIC_BOSS];
+
+    const CHARACTERS = [
+  {
+    "id": "lily",
+    "name": "Lily",
+    "attribute": "Spectro",
+    "role": "Support",
+    "damageTypes": [],
+    "buffs": [
+      "Echo BUFF"
+    ],
+    "mechanics": [
+      "Unison"
+    ],
+    "maxUses": 2,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/lily.png"
+  },
+  {
+    "id": "suoming",
+    "name": "Suoming",
+    "attribute": "Electro",
+    "role": "Sub DPS",
+    "damageTypes": [
+      "Basic DMG"
+    ],
+    "buffs": [
+      "Attribute BUFF",
+      "Skill BUFF"
+    ],
+    "mechanics": [
+      "Unison"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/suoming.png"
+  },
+  {
+    "id": "hsin",
+    "name": "Hsin",
+    "attribute": "Electro",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Skill DMG"
+    ],
+    "buffs": [],
+    "mechanics": [
+      "Negative Status",
+      "Unison"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/hsin.png"
+  },
+  {
+    "id": "jingran",
+    "name": "Jingran",
+    "attribute": "Fusion",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Heavy DMG"
+    ],
+    "buffs": [],
+    "mechanics": [
+      "Shield"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/jingran.png"
+  },
+  {
+    "id": "qingxiao",
+    "name": "Qingxiao",
+    "attribute": "Aero",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Mixed DMG Types"
+    ],
+    "buffs": [],
+    "mechanics": [
+      "Tune Strain"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/qingxiao.png"
+  },
+  {
+    "id": "suisui",
+    "name": "Suisui",
+    "attribute": "Spectro",
+    "role": "Support",
+    "damageTypes": [],
+    "buffs": [],
+    "mechanics": [
+      "Negative Status"
+    ],
+    "maxUses": 2,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/suisui.png"
+  },
+  {
+    "id": "yangyang-xuanling",
+    "name": "Yangyang: Xuanling",
+    "attribute": "Havoc",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Heavy DMG"
+    ],
+    "buffs": [
+      "Attribute BUFF"
+    ],
+    "mechanics": [
+      "Negative Status"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/yangyang-xuanling.png"
+  },
+  {
+    "id": "lucilla",
+    "name": "Lucilla",
+    "attribute": "Glacio",
+    "role": "Sub DPS",
+    "damageTypes": [
+      "Basic DMG"
+    ],
+    "buffs": [
+      "Echo BUFF"
+    ],
+    "mechanics": [
+      "Negative Status",
+      "Echo Cast"
+    ],
+    "maxUses": 2,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/lucilla.png"
+  },
+  {
+    "id": "rebecca",
+    "name": "Rebecca",
+    "attribute": "Electro",
+    "role": "Sub DPS",
+    "damageTypes": [
+      "Basic DMG"
+    ],
+    "buffs": [
+      "Heavy BUFF"
+    ],
+    "mechanics": [
+      "Tune Hack"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/rebecca.png"
+  },
+  {
+    "id": "lucy",
+    "name": "Lucy",
+    "attribute": "Spectro",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Heavy DMG"
+    ],
+    "buffs": [
+      "Basic BUFF"
+    ],
+    "mechanics": [
+      "Tune Hack"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/lucy.png"
+  },
+  {
+    "id": "denia",
+    "name": "Denia",
+    "attribute": "Fusion",
+    "role": "Sub DPS",
+    "damageTypes": [
+      "Liberation DMG"
+    ],
+    "buffs": [
+      "Attribute BUFF"
+    ],
+    "mechanics": [
+      "Negative Status",
+      "Tune Strain"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/denia.png"
+  },
+  {
+    "id": "hiyuki",
+    "name": "Hiyuki",
+    "attribute": "Glacio",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Liberation DMG"
+    ],
+    "buffs": [],
+    "mechanics": [
+      "Negative Status"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/hiyuki.png"
+  },
+  {
+    "id": "sigrika",
+    "name": "Sigrika",
+    "attribute": "Aero",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Echo Skill DMG"
+    ],
+    "buffs": [],
+    "mechanics": [],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/sigrika.png"
+  },
+  {
+    "id": "luuk-herssen",
+    "name": "Luuk Herssen",
+    "attribute": "Spectro",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Basic DMG"
+    ],
+    "buffs": [],
+    "mechanics": [
+      "Tune Strain"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/luuk-herssen.png"
+  },
+  {
+    "id": "aemeath",
+    "name": "Aemeath",
+    "attribute": "Fusion",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Liberation DMG"
+    ],
+    "buffs": [],
+    "mechanics": [
+      "Negative Status",
+      "Tune Rupture"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/aemeath.png"
+  },
+  {
+    "id": "mornye",
+    "name": "Mornye",
+    "attribute": "Fusion",
+    "role": "Support",
+    "damageTypes": [],
+    "buffs": [],
+    "mechanics": [
+      "Tune Break"
+    ],
+    "maxUses": 2,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/mornye.png"
+  },
+  {
+    "id": "lynae",
+    "name": "Lynae",
+    "attribute": "Spectro",
+    "role": "Sub DPS",
+    "damageTypes": [
+      "Basic DMG"
+    ],
+    "buffs": [
+      "Liberation BUFF"
+    ],
+    "mechanics": [
+      "Tune Rupture",
+      "Tune Strain"
+    ],
+    "maxUses": 1,
+    "dualModes": [
+      "Tune Rupture",
+      "Tune Strain"
+    ],
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/lynae.png"
+  },
+  {
+    "id": "chisa",
+    "name": "Chisa",
+    "attribute": "Havoc",
+    "role": "Support",
+    "damageTypes": [
+      "Liberation DMG"
+    ],
+    "buffs": [],
+    "mechanics": [
+      "Negative Status"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/chisa.png"
+  },
+  {
+    "id": "qiuyuan",
+    "name": "Qiuyuan",
+    "attribute": "Aero",
+    "role": "Sub DPS",
+    "damageTypes": [
+      "Heavy DMG",
+      "Echo Skill DMG"
+    ],
+    "buffs": [
+      "Echo BUFF"
+    ],
+    "mechanics": [
+      "Echo Cast"
+    ],
+    "maxUses": 1,
+    "dualModes": [
+      "Tune Rupture",
+      "Negative Status"
+    ],
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/qiuyuan.png"
+  },
+  {
+    "id": "galbrena",
+    "name": "Galbrena",
+    "attribute": "Fusion",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Echo Skill DMG",
+      "Heavy DMG"
+    ],
+    "buffs": [],
+    "mechanics": [
+      "Echo Cast"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/galbrena.png"
+  },
+  {
+    "id": "iuno",
+    "name": "Iuno",
+    "attribute": "Aero",
+    "role": "Sub DPS",
+    "damageTypes": [
+      "Liberation DMG"
+    ],
+    "buffs": [
+      "Heavy BUFF"
+    ],
+    "mechanics": [
+      "Shield"
+    ],
+    "maxUses": 1,
+    "dualModes": [
+      "Tune Strain",
+      "(Negative Status + Attribute BUFF)"
+    ],
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/iuno.png"
+  },
+  {
+    "id": "augusta",
+    "name": "Augusta",
+    "attribute": "Electro",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Heavy DMG"
+    ],
+    "buffs": [],
+    "mechanics": [
+      "Shield"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/augusta.png"
+  },
+  {
+    "id": "phrolova",
+    "name": "Phrolova",
+    "attribute": "Havoc",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Echo Skill DMG",
+      "Skill DMG"
+    ],
+    "buffs": [
+      "Attribute BUFF",
+      "Heavy BUFF"
+    ],
+    "mechanics": [
+      "Echo Cast"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/phrolova.png"
+  },
+  {
+    "id": "lupa",
+    "name": "Lupa",
+    "attribute": "Fusion",
+    "role": "Sub DPS",
+    "damageTypes": [
+      "Liberation DMG"
+    ],
+    "buffs": [
+      "Attribute BUFF",
+      "Basic BUFF"
+    ],
+    "mechanics": [],
+    "maxUses": 1,
+    "dualModes": [
+      "Negative status",
+      "(Echo BUFF + Echo Cast)"
+    ],
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/lupa.png"
+  },
+  {
+    "id": "cartethyia",
+    "name": "Cartethyia",
+    "attribute": "Aero",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Basic DMG"
+    ],
+    "buffs": [],
+    "mechanics": [
+      "Negative Status"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/cartethyia.png"
+  },
+  {
+    "id": "ciaccona",
+    "name": "Ciaccona",
+    "attribute": "Aero",
+    "role": "Sub DPS",
+    "damageTypes": [
+      "Basic DMG"
+    ],
+    "buffs": [
+      "Attribute BUFF"
+    ],
+    "mechanics": [
+      "Negative Status"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/ciaccona.png"
+  },
+  {
+    "id": "zani",
+    "name": "Zani",
+    "attribute": "Spectro",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Heavy DMG"
+    ],
+    "buffs": [],
+    "mechanics": [
+      "Negative Status"
+    ],
+    "maxUses": 1,
+    "dualModes": [
+      "Negative Status",
+      "Unison"
+    ],
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/zani.png"
+  },
+  {
+    "id": "cantarella",
+    "name": "Cantarella",
+    "attribute": "Havoc",
+    "role": "Sub DPS",
+    "damageTypes": [
+      "Basic DMG"
+    ],
+    "buffs": [
+      "Skill BUFF",
+      "Attribute BUFF"
+    ],
+    "mechanics": [
+      "Echo Cast",
+      "Coordinated ATK"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/cantarella.png"
+  },
+  {
+    "id": "brant",
+    "name": "Brant",
+    "attribute": "Fusion",
+    "role": "Sub DPS",
+    "damageTypes": [
+      "Basic DMG"
+    ],
+    "buffs": [
+      "Skill BUFF",
+      "Attribute BUFF"
+    ],
+    "mechanics": [],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/brant.png"
+  },
+  {
+    "id": "phoebe",
+    "name": "Phoebe",
+    "attribute": "Spectro",
+    "role": "Sub DPS",
+    "damageTypes": [
+      "Heavy DMG"
+    ],
+    "buffs": [],
+    "mechanics": [
+      "Negative Status"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/phoebe.png"
+  },
+  {
+    "id": "roccia",
+    "name": "Roccia",
+    "attribute": "Havoc",
+    "role": "Sub DPS",
+    "damageTypes": [
+      "Heavy DMG"
+    ],
+    "buffs": [
+      "Basic BUFF"
+    ],
+    "mechanics": [
+      "Echo Cast"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/roccia.png"
+  },
+  {
+    "id": "carlotta",
+    "name": "Carlotta",
+    "attribute": "Glacio",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Skill DMG"
+    ],
+    "buffs": [],
+    "mechanics": [],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/carlotta.png"
+  },
+  {
+    "id": "camellya",
+    "name": "Camellya",
+    "attribute": "Havoc",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Basic DMG"
+    ],
+    "buffs": [],
+    "mechanics": [],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/camellya.png"
+  },
+  {
+    "id": "shorekeeper",
+    "name": "Shorekeeper",
+    "attribute": "Spectro",
+    "role": "Support",
+    "damageTypes": [],
+    "buffs": [],
+    "mechanics": [],
+    "maxUses": 2,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/shorekeeper.png"
+  },
+  {
+    "id": "xiangli-yao",
+    "name": "Xiangli Yao",
+    "attribute": "Electro",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Liberation DMG"
+    ],
+    "buffs": [],
+    "mechanics": [],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/xiangli-yao.png"
+  },
+  {
+    "id": "zhezhi",
+    "name": "Zhezhi",
+    "attribute": "Glacio",
+    "role": "Sub DPS",
+    "damageTypes": [
+      "Basic DMG"
+    ],
+    "buffs": [
+      "Skill BUFF",
+      "Attribute BUFF"
+    ],
+    "mechanics": [
+      "Energy"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/zhezhi.png"
+  },
+  {
+    "id": "changli",
+    "name": "Changli",
+    "attribute": "Fusion",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Skill DMG"
+    ],
+    "buffs": [
+      "Liberation BUFF"
+    ],
+    "mechanics": [],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/changli.png"
+  },
+  {
+    "id": "jinhsi",
+    "name": "Jinhsi",
+    "attribute": "Spectro",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Skill DMG"
+    ],
+    "buffs": [],
+    "mechanics": [
+      "Unison"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/jinhsi.png"
+  },
+  {
+    "id": "yinlin",
+    "name": "Yinlin",
+    "attribute": "Electro",
+    "role": "Sub DPS",
+    "damageTypes": [
+      "Skill DMG"
+    ],
+    "buffs": [
+      "Liberation BUFF",
+      "Attribute BUFF"
+    ],
+    "mechanics": [
+      "Coordinated ATK"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/yinlin.png"
+  },
+  {
+    "id": "jiyan",
+    "name": "Jiyan",
+    "attribute": "Aero",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Heavy DMG"
+    ],
+    "buffs": [],
+    "mechanics": [],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/jiyan.png"
+  },
+  {
+    "id": "lingyang",
+    "name": "Lingyang",
+    "attribute": "Glacio",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Basic DMG",
+      "Skill DMG"
+    ],
+    "buffs": [],
+    "mechanics": [],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/lingyang.png"
+  },
+  {
+    "id": "encore",
+    "name": "Encore",
+    "attribute": "Fusion",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Basic DMG"
+    ],
+    "buffs": [],
+    "mechanics": [],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/encore.png"
+  },
+  {
+    "id": "calcharo",
+    "name": "Calcharo",
+    "attribute": "Electro",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Liberation DMG"
+    ],
+    "buffs": [],
+    "mechanics": [],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/calcharo.png"
+  },
+  {
+    "id": "jianxin",
+    "name": "Jianxin",
+    "attribute": "Aero",
+    "role": "Sub DPS",
+    "damageTypes": [],
+    "buffs": [
+      "Liberation BUFF"
+    ],
+    "mechanics": [],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/jianxin.png"
+  },
+  {
+    "id": "verina",
+    "name": "Verina",
+    "attribute": "Spectro",
+    "role": "Support",
+    "damageTypes": [],
+    "buffs": [],
+    "mechanics": [
+      "Coordinated ATK"
+    ],
+    "maxUses": 2,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/verina.png"
+  },
+  {
+    "id": "rover-spectro",
+    "name": "Rover (Spectro)",
+    "attribute": "Spectro",
+    "role": "Sub DPS",
+    "damageTypes": [
+      "Mixed DMG Types"
+    ],
+    "buffs": [
+      "Attribute BUFF"
+    ],
+    "mechanics": [
+      "Negative Status"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": true,
+    "roverAttr": "Spectro",
+    "img": "./assets/characters/rover.png"
+  },
+  {
+    "id": "rover-havoc",
+    "name": "Rover (Havoc)",
+    "attribute": "Havoc",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Basic DMG",
+      "Mixed DMG Types"
+    ],
+    "buffs": [],
+    "mechanics": [],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": true,
+    "roverAttr": "Havoc",
+    "img": "./assets/characters/rover.png"
+  },
+  {
+    "id": "rover-electro",
+    "name": "Rover (Electro)",
+    "attribute": "Electro",
+    "role": "Sub DPS",
+    "damageTypes": [
+      "Skill DMG"
+    ],
+    "buffs": [],
+    "mechanics": [
+      "Negative Status"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": true,
+    "roverAttr": "Electro",
+    "img": "./assets/characters/rover.png"
+  },
+  {
+    "id": "rover-aero",
+    "name": "Rover (Aero)",
+    "attribute": "Aero",
+    "role": "Support",
+    "damageTypes": [
+      "Skill DMG"
+    ],
+    "buffs": [],
+    "mechanics": [
+      "Negative Status"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": true,
+    "roverAttr": "Aero",
+    "img": "./assets/characters/rover.png"
+  },
+  {
+    "id": "buling",
+    "name": "Buling",
+    "attribute": "Electro",
+    "role": "Support",
+    "damageTypes": [],
+    "buffs": [
+      "Skill BUFF"
+    ],
+    "mechanics": [
+      "Negative Status"
+    ],
+    "maxUses": 2,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/buling.png"
+  },
+  {
+    "id": "youhu",
+    "name": "Youhu",
+    "attribute": "Glacio",
+    "role": "Support",
+    "damageTypes": [],
+    "buffs": [],
+    "mechanics": [],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/youhu.png"
+  },
+  {
+    "id": "lumi",
+    "name": "Lumi",
+    "attribute": "Electro",
+    "role": "Sub DPS",
+    "damageTypes": [],
+    "buffs": [
+      "Skill BUFF"
+    ],
+    "mechanics": [],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/lumi.png"
+  },
+  {
+    "id": "chixia",
+    "name": "Chixia",
+    "attribute": "Fusion",
+    "role": "Sub DPS",
+    "damageTypes": [
+      "Skill DMG",
+      "Mixed DMG Types"
+    ],
+    "buffs": [
+      "Basic BUFF"
+    ],
+    "mechanics": [],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/chixia.png"
+  },
+  {
+    "id": "aalto",
+    "name": "Aalto",
+    "attribute": "Aero",
+    "role": "Sub DPS",
+    "damageTypes": [],
+    "buffs": [
+      "Attribute BUFF"
+    ],
+    "mechanics": [],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/aalto.png"
+  },
+  {
+    "id": "danjin",
+    "name": "Danjin",
+    "attribute": "Havoc",
+    "role": "Main DPS",
+    "damageTypes": [
+      "Heavy DMG",
+      "Mixed DMG Types"
+    ],
+    "buffs": [
+      "Attribute BUFF"
+    ],
+    "mechanics": [],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/danjin.png"
+  },
+  {
+    "id": "yuanwu",
+    "name": "Yuanwu",
+    "attribute": "Electro",
+    "role": "Support",
+    "damageTypes": [],
+    "buffs": [],
+    "mechanics": [
+      "Coordinated ATK"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/yuanwu.png"
+  },
+  {
+    "id": "taoqi",
+    "name": "Taoqi",
+    "attribute": "Havoc",
+    "role": "Sub DPS",
+    "damageTypes": [],
+    "buffs": [
+      "Skill BUFF"
+    ],
+    "mechanics": [],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/taoqi.png"
+  },
+  {
+    "id": "baizhi",
+    "name": "Baizhi",
+    "attribute": "Glacio",
+    "role": "Support",
+    "damageTypes": [],
+    "buffs": [],
+    "mechanics": [],
+    "maxUses": 2,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/baizhi.png"
+  },
+  {
+    "id": "mortefi",
+    "name": "Mortefi",
+    "attribute": "Fusion",
+    "role": "Sub DPS",
+    "damageTypes": [],
+    "buffs": [
+      "Heavy BUFF"
+    ],
+    "mechanics": [
+      "Coordinated ATK"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/mortefi.png"
+  },
+  {
+    "id": "yangyang",
+    "name": "Yangyang",
+    "attribute": "Aero",
+    "role": "Sub DPS",
+    "damageTypes": [],
+    "buffs": [],
+    "mechanics": [
+      "Energy"
+    ],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/yangyang.png"
+  },
+  {
+    "id": "sanhua",
+    "name": "Sanhua",
+    "attribute": "Glacio",
+    "role": "Sub DPS",
+    "damageTypes": [
+      "Mixed DMG Types"
+    ],
+    "buffs": [
+      "Basic BUFF"
+    ],
+    "mechanics": [],
+    "maxUses": 1,
+    "dualModes": null,
+    "isRover": false,
+    "roverAttr": null,
+    "img": "./assets/characters/sanhua.png"
+  }
+];
+    const CHAR_MAP = Object.fromEntries(CHARACTERS.map(c => [c.id, c]));
+
+    function getMaxUses(char) {
+      return char.maxUses || 1;
+    }
+
+    function shareBtnHTML() {
+      return `
+        <button onclick="generateTabSnapshot()" class="shrink-0 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-semibold text-xs shadow-md shadow-amber-500/20 flex items-center gap-1.5 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span>Share as Image</span>
+        </button>
+      `;
+    }
+
+    // =========================================================================
+    // 2. APPLICATION STATE & PERSISTENCE
+    // =========================================================================
+    const STORAGE_KEY = 'wuwa_matrix_v38_planner_state_v3';
+    const WELCOME_SEEN_KEY = 'wuwa_matrix_v38_welcome_hidden';
+
+    function createDefaultTeams() {
+      return [
+        { id: 'team_feilian_1', bossCategory: 'feilian',   name: 'Feilian Squad 1',   slots: [null, null, null], modes: {} },
+        { id: 'team_denia_1',   bossCategory: 'denia',     name: 'Denia Squad 1',     slots: [null, null, null], modes: {} },
+        { id: 'team_crown_1',   bossCategory: 'crownless', name: 'Crownless Squad 1', slots: [null, null, null], modes: {} },
+        { id: 'team_sigil_1',   bossCategory: 'sigillum',  name: 'Sigillum Squad 1',  slots: [null, null, null], modes: {} },
+        { id: 'team_filler_1',  bossCategory: 'filler',    name: 'Filler / Flex 1',   slots: [null, null, null], modes: {} },
+      ];
+    }
+
+    let state = {
+      activeTab: 1,
+      ownedIds: CHARACTERS.map(c => c.id),
+      teams: createDefaultTeams(),
+      roundsCount: 3,
+      // placements: { id, teamId, roundIndex (0-based), startBossIndex (0..4), spanCount (1..5), score }
+      placements: [],
+      showRoundTip: true,
+      tab1Search: '',
+      tab1AttrFilter: 'All',
+      tab1UseFilter: 'All',
+      tab2AttrFilter: 'All',
+      tab2MechFilter: 'All',
+      selectedCharForClickSlot: null,
+      selectedTeamForClickAssign: null,
+      exportSelections: {
+        tab1: true,
+        tab2: true,
+        tab3: true,
+        tab4: true
+      }
+    };
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') {
+            state = {
+              ...state,
+              ...parsed,
+              selectedCharForClickSlot: null,
+              selectedTeamForClickAssign: null
+            };
+          }
+          if (![1, 2, 3, 4, 5].includes(state.activeTab)) {
+            state.activeTab = 1;
+          }
+          if (typeof state.tab2AttrFilter !== 'string') state.tab2AttrFilter = 'All';
+          if (typeof state.tab2MechFilter !== 'string') state.tab2MechFilter = 'All';
+          state.ownedIds = Array.isArray(state.ownedIds)
+            ? state.ownedIds.filter(id => typeof id === 'string' && Boolean(CHAR_MAP[id]))
+            : CHARACTERS.map(c => c.id);
+          if (!Array.isArray(state.teams) || state.teams.length === 0) {
+            state.teams = createDefaultTeams();
+          } else {
+            state.teams = state.teams
+              .filter(t => t && typeof t === 'object')
+              .map((t, idx) => {
+                const rawSlots = Array.isArray(t.slots) ? t.slots.slice(0, 3) : [null, null, null];
+                while (rawSlots.length < 3) rawSlots.push(null);
+                const cleanSlots = rawSlots.map(s => (typeof s === 'string' && CHAR_MAP[s] ? s : null));
+                return {
+                  id: typeof t.id === 'string' && t.id ? t.id : `team_restored_${idx}_${Date.now()}`,
+                  bossCategory: typeof t.bossCategory === 'string' ? t.bossCategory : 'filler',
+                  name: typeof t.name === 'string' && t.name.trim() ? t.name : `Team ${idx + 1}`,
+                  slots: cleanSlots,
+                  modes: t.modes && typeof t.modes === 'object' ? t.modes : {}
+                };
+              });
+            if (state.teams.length === 0) state.teams = createDefaultTeams();
+          }
+          if (!Array.isArray(state.placements)) {
+            state.placements = [];
+          } else {
+            const validTeamIds = new Set(state.teams.map(t => t.id));
+            state.placements = state.placements.filter(p => p && validTeamIds.has(p.teamId));
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load saved state, resetting:', e);
+        state.teams = createDefaultTeams();
+        state.placements = [];
+      }
+    }
+
+    function saveState() {
+      try {
+        const toSave = {
+          activeTab: state.activeTab,
+          ownedIds: state.ownedIds,
+          teams: state.teams,
+          roundsCount: state.roundsCount,
+          placements: state.placements,
+          showRoundTip: state.showRoundTip,
+          exportSelections: state.exportSelections
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+        const ind = document.getElementById('saveIndicator');
+        if (ind) {
+          ind.classList.remove('opacity-50');
+          setTimeout(() => ind.classList.add('opacity-90'), 250);
+        }
+      } catch (e) {
+        console.warn('Failed to save state:', e);
+      }
+    }
+
+    function showToast(msg) {
+      const banner = document.getElementById('toastBanner');
+      const text = document.getElementById('toastText');
+      if (!banner || !text) return;
+      text.textContent = msg;
+      banner.classList.remove('opacity-0', 'translate-y-2');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => {
+        banner.classList.add('opacity-0', 'translate-y-2');
+      }, 2600);
+    }
+
+    // =========================================================================
+    // 3. LOCAL .PNG AVATAR RENDERER WITH ELEMENT BADGE FALLBACK
+    // =========================================================================
+    function getInitials(name) {
+      return String(name || '')
+        .replace(/\(.*\)/, '')
+        .trim()
+        .split(/[\s:]+/)
+        .map(p => p[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase();
+    }
+
+    function renderCharacterAvatarHTML(char, sizeClass = 'w-12 h-12') {
+      if (!char) return '';
+      const attr = ATTRIBUTES[char.attribute] || ATTRIBUTES.Spectro;
+      const charName = String(char.name || char.id || 'Unit');
+      const initials = getInitials(charName);
+      const safeName = charName.replace(/"/g, '&quot;');
+      return `
+        <div class="avatar-box ${sizeClass} relative rounded-xl overflow-hidden shrink-0 border shadow-md select-none" style="border-color: ${attr.hex}88; background: radial-gradient(circle at 30% 25%, ${attr.hex}44, #0f172a 85%);">
+          <img src="${char.img || ''}" alt="${safeName}" class="w-full h-full object-cover" onerror="this.parentElement.classList.add('img-fallback')" />
+          <div class="fallback-badge w-full h-full items-center justify-center font-display font-bold text-sm text-white">
+            ${initials}
+          </div>
+          <span class="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 rounded-full border border-slate-950" style="background:${attr.hex}" title="${char.attribute || ''}"></span>
+        </div>
+      `;
+    }
+
+    function renderBossAvatarHTML(boss, sizeClass = 'w-10 h-10') {
+      if (!boss) return '';
+      const attr = boss.resistAttr ? ATTRIBUTES[boss.resistAttr] : null;
+      const borderHex = attr ? attr.hex : '#94a3b8';
+      const bossName = String(boss.name || boss.title || 'Boss');
+      const initials = getInitials(bossName);
+      const safeName = bossName.replace(/"/g, '&quot;');
+      return `
+        <div class="avatar-box ${sizeClass} relative rounded-xl overflow-hidden shrink-0 border shadow-md select-none" style="border-color: ${borderHex}88; background: radial-gradient(circle at 30% 25%, ${borderHex}33, #0f172a 85%);">
+          <img src="${boss.img || ''}" alt="${safeName}" class="w-full h-full object-cover" onerror="this.parentElement.classList.add('img-fallback')" />
+          <div class="fallback-badge w-full h-full items-center justify-center font-display font-bold text-xs text-white">
+            ${initials}
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // 4. USAGE / ROVER EXCLUSIVITY & SYNERGY HELPERS
+    // =========================================================================
+    function getActiveRoverId() {
+      for (const team of state.teams) {
+        for (const slotCharId of team.slots) {
+          if (!slotCharId) continue;
+          const c = CHAR_MAP[slotCharId];
+          if (c && c.isRover) return c.id;
+        }
+      }
+      return null;
+    }
+
+    function getCharUsageCount(charId) {
+      let count = 0;
+      for (const team of state.teams) {
+        for (const slotCharId of team.slots) {
+          if (slotCharId === charId) count++;
+        }
+      }
+      return count;
+    }
+
+    function getCharRemainingUses(charId) {
+      const char = CHAR_MAP[charId];
+      if (!char) return 0;
+      if (char.isRover) {
+        const activeRover = getActiveRoverId();
+        if (activeRover && activeRover !== char.id) {
+          return 0;
+        }
+      }
+      return Math.max(0, getMaxUses(char) - getCharUsageCount(charId));
+    }
+
+    function isCharacterLockedInPool(char) {
+      if (char.isRover) {
+        const activeRover = getActiveRoverId();
+        if (activeRover && activeRover !== char.id) return true;
+      }
+      return getCharRemainingUses(char.id) <= 0;
+    }
+
+    function isTeamComplete(team) {
+      return team.slots.some(id => id !== null);
+    }
+
+    function getTeamCharacters(team) {
+      return team.slots.map(id => (id ? CHAR_MAP[id] : null)).filter(Boolean);
+    }
+
+    function getTeamCombinedMechanics(team) {
+      const chars = getTeamCharacters(team);
+      const set = new Set();
+      chars.forEach(c => (c.mechanics || []).forEach(m => set.add(m)));
+      return Array.from(set);
+    }
+
+    function evaluateTeamAgainstBosses(team, bossesList) {
+      const chars = getTeamCharacters(team);
+      const teamMechs = getTeamCombinedMechanics(team);
+
+      const resistedDetails = [];
+      chars.forEach(c => {
+        bossesList.forEach(b => {
+          if (b && b.resistAttr && c.attribute === b.resistAttr) {
+            resistedDetails.push({ char: c, boss: b });
+          }
+        });
+      });
+
+      const targetMechanics = new Set(bossesList.map(b => b?.mechanic).filter(Boolean));
+      const matchedMechanics = teamMechs.filter(m => targetMechanics.has(m));
+
+      return {
+        resistedDetails,
+        hasResistanceWarning: resistedDetails.length > 0,
+        teamMechs,
+        matchedMechanics,
+        targetMechanics
+      };
+    }
+
+    // =========================================================================
+    // 5. NAVIGATION & MODAL CONTROLLERS
+    // =========================================================================
+    const TABS = [
+      { id: 1, short: '1. Roster', full: '1. Character Checklist' },
+      { id: 2, short: '2. Teams', full: '2. Team Formation' },
+      { id: 3, short: '3. Rounds', full: '3. Round Planning' },
+      { id: 4, short: '4. Results', full: '4. Results' },
+      { id: 5, short: '5. Export/Import', full: '5. Exporting / Importing' }
+    ];
+
+    function switchTab(tabId) {
+      state.activeTab = tabId;
+      state.selectedCharForClickSlot = null;
+      state.selectedTeamForClickAssign = null;
+      saveState();
+      renderApp();
+    }
+
+    function renderNavTabs() {
+      const container = document.getElementById('tabButtonsContainer');
+      container.innerHTML = TABS.map(t => {
+        const active = state.activeTab === t.id;
+        return `
+          <button
+            onclick="switchTab(${t.id})"
+            class="px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 ${
+              active
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-sm'
+                : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/70 border border-transparent'
+            }"
+          >
+            <span class="hidden md:inline">${t.full}</span>
+            <span class="md:hidden">${t.short}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function openWelcomeModal(force = false) {
+      if (!force && localStorage.getItem(WELCOME_SEEN_KEY) === 'true') return;
+      const modal = document.getElementById('welcomeModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeWelcomeModal() {
+      const chk = document.getElementById('dontShowWelcomeAgain');
+      if (chk && chk.checked) {
+        localStorage.setItem(WELCOME_SEEN_KEY, 'true');
+      }
+      const modal = document.getElementById('welcomeModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function openResistModal(charName, attr, bossName) {
+      const modal = document.getElementById('resistAlertModal');
+      document.getElementById('resistModalSubtitle').textContent = `${charName} (${attr}) vs ${bossName}`;
+      document.getElementById('resistModalBody').innerHTML = `
+        <strong>${bossName}</strong> has high innate resistance to <strong class="text-orange-300">${attr} DMG</strong>. Deploying <strong>${charName}</strong> against this boss will significantly reduce damage output and lower your Matrix clear score. Consider swapping to a non-resisted element!
+      `;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeResistModal() {
+      const modal = document.getElementById('resistAlertModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function openResetModal() {
+      const modal = document.getElementById('resetModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeResetModal() {
+      const modal = document.getElementById('resetModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function confirmResetAll() {
+      localStorage.removeItem(STORAGE_KEY);
+      state = {
+        activeTab: 1,
+        ownedIds: CHARACTERS.map(c => c.id),
+        teams: createDefaultTeams(),
+        roundsCount: 3,
+        placements: [],
+        showRoundTip: true,
+        tab1Search: '',
+        tab1AttrFilter: 'All',
+        tab1UseFilter: 'All',
+        tab2AttrFilter: 'All',
+        tab2MechFilter: 'All',
+        selectedCharForClickSlot: null,
+        selectedTeamForClickAssign: null,
+        exportSelections: { tab1: true, tab2: true, tab3: true, tab4: true }
+      };
+      saveState();
+      closeResetModal();
+      renderApp();
+      showToast('All planner settings reset to default.');
+    }
+
+    // =========================================================================
+    // 6. TAB 1: CHARACTER CHECKLIST (61 CHARACTERS, NO WEAPONS, NO PRESET)
+    // =========================================================================
+    function toggleCharacterOwned(charId) {
+      const idx = state.ownedIds.indexOf(charId);
+      if (idx >= 0) {
+        state.ownedIds.splice(idx, 1);
+        state.teams.forEach(t => {
+          t.slots = t.slots.map(s => (s === charId ? null : s));
+        });
+      } else {
+        state.ownedIds.push(charId);
+      }
+      saveState();
+      renderApp();
+    }
+
+    function setAllOwned(owned) {
+      if (owned) {
+        state.ownedIds = CHARACTERS.map(c => c.id);
+        showToast('All 61 Resonators enabled.');
+      } else {
+        state.ownedIds = [];
+        state.teams.forEach(t => (t.slots = [null, null, null]));
+        showToast('All Resonators toggled off.');
+      }
+      saveState();
+      renderApp();
+    }
+
+    function renderTab1() {
+      const filtered = CHARACTERS.filter(c => {
+        const matchSearch = c.name.toLowerCase().includes(state.tab1Search.toLowerCase());
+        const matchAttr = state.tab1AttrFilter === 'All' || c.attribute === state.tab1AttrFilter;
+        const maxUses = getMaxUses(c);
+        const matchUse =
+          state.tab1UseFilter === 'All' ||
+          (state.tab1UseFilter === '2' && maxUses >= 2) ||
+          (state.tab1UseFilter === '1' && maxUses === 1);
+        return matchSearch && matchAttr && matchUse;
+      });
+
+      const ownedCount = state.ownedIds.length;
+      const totalVigor = state.ownedIds.reduce((acc, id) => acc + (CHAR_MAP[id] ? getMaxUses(CHAR_MAP[id]) : 0), 0);
+
+      return `
+        <div class="space-y-4">
+          <!-- Guide Banner (Restored with updated count of 61) -->
+          <div class="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-slate-900 to-sky-500/10 border border-amber-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+            <div class="flex items-start gap-3">
+              <div class="p-2 rounded-xl bg-amber-500/20 text-amber-300 shrink-0 mt-0.5">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+              </div>
+              <div>
+                <h2 class="text-sm sm:text-base font-bold text-white">Step 1: Toggle ON the Resonators You Own &amp; Plan to Use</h2>
+                <p class="text-xs text-slate-300 mt-0.5 leading-relaxed">
+                  Only toggled-ON characters will appear in Tab 2's Team Builder. Standard characters have <strong class="text-white">1 Use</strong>, 2-Cost Support/Healers have <strong class="text-cyan-300">2 Uses</strong>, and <strong class="text-amber-300">Lucilla</strong> has <strong class="text-amber-300">2 Uses (1 + 1 Seasonal Bonus)</strong> in v3.8. Note: Using one Rover attribute locks the remaining Rover attributes.
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0 self-end md:self-center">
+              <div class="px-3 py-1.5 rounded-xl bg-slate-950/90 border border-slate-800 text-xs">
+                <span class="text-slate-400">Selected:</span>
+                <strong class="text-amber-300 ml-1">${ownedCount} / ${CHARACTERS.length}</strong>
+                <span class="text-slate-500 mx-1.5">|</span>
+                <span class="text-slate-400">Total Uses:</span>
+                <strong class="text-emerald-300 ml-1">${totalVigor}</strong>
+              </div>
+              ${shareBtnHTML()}
+            </div>
+          </div>
+
+          <!-- Filter & Quick Actions Bar (No New Player Preset button) -->
+          <div class="p-3.5 rounded-2xl bg-[#121722] border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="relative">
+                <input
+                  type="text"
+                  value="${state.tab1Search}"
+                  oninput="state.tab1Search = this.value; renderApp();"
+                  placeholder="Search Resonator..."
+                  class="pl-8 pr-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 w-44 sm:w-52"
+                />
+                <svg class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-1">
+                ${['All', ...Object.keys(ATTRIBUTES)].map(attr => {
+                  const active = state.tab1AttrFilter === attr;
+                  const meta = ATTRIBUTES[attr];
+                  return `
+                    <button
+                      onclick="state.tab1AttrFilter = '${attr}'; renderApp();"
+                      class="px-2.5 py-1 rounded-lg text-xs font-semibold border transition ${
+                        active
+                          ? (meta ? `${meta.bg} ${meta.text} ${meta.border}` : 'bg-amber-500/20 text-amber-300 border-amber-500/50')
+                          : 'bg-slate-900/80 text-slate-400 border-slate-800 hover:text-slate-200'
+                      }"
+                    >${attr}</button>
+                  `;
+                }).join('')}
+              </div>
+
+              <select
+                onchange="state.tab1UseFilter = this.value; renderApp();"
+                class="px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+              >
+                <option value="All" ${state.tab1UseFilter === 'All' ? 'selected' : ''}>All Use Limits</option>
+                <option value="2" ${state.tab1UseFilter === '2' ? 'selected' : ''}>2 Uses (Supports &amp; Lucilla)</option>
+                <option value="1" ${state.tab1UseFilter === '1' ? 'selected' : ''}>1 Use (Standard)</option>
+              </select>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button onclick="setAllOwned(true)" class="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-medium transition">
+                Select All
+              </button>
+              <button onclick="setAllOwned(false)" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition">
+                Clear All
+              </button>
+            </div>
+          </div>
+
+          <!-- Character Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            ${filtered.map(char => {
+              const isOwned = state.ownedIds.includes(char.id);
+              const attr = ATTRIBUTES[char.attribute];
+              const maxUses = getMaxUses(char);
+              const isLucilla = char.id === 'lucilla';
+              return `
+                <div
+                  onclick="toggleCharacterOwned('${char.id}')"
+                  class="group cursor-pointer rounded-2xl p-3 border transition-all select-none flex items-center justify-between gap-2.5 ${
+                    isOwned
+                      ? 'bg-[#181f2e] border-slate-700 hover:border-amber-500/60 shadow-md'
+                      : 'bg-[#0e121b] border-slate-800/70 opacity-50 hover:opacity-80'
+                  }"
+                >
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    ${renderCharacterAvatarHTML(char, 'w-12 h-12')}
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-1.5">
+                        <span class="font-bold text-sm text-white truncate">${char.name}</span>
+                      </div>
+                      <div class="flex items-center gap-1.5 mt-0.5 text-[11px]">
+                        <span class="px-1.5 py-0.2 rounded ${attr.bg} ${attr.text} font-semibold">${char.attribute}</span>
+                        <span class="text-slate-400">${char.role}</span>
+                      </div>
+                      <div class="mt-1 flex flex-wrap items-center gap-1">
+                        ${isLucilla
+                          ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">2 Uses (+1 Season)</span>`
+                          : maxUses === 2
+                            ? `<span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">2 Uses • Support</span>`
+                            : `<span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">1 Use</span>`
+                        }
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="shrink-0">
+                    <div class="w-10 h-6 rounded-full p-0.5 transition-colors flex items-center ${isOwned ? 'bg-amber-500' : 'bg-slate-800 border border-slate-700'}">
+                      <div class="w-5 h-5 rounded-full bg-white shadow transform transition-transform ${isOwned ? 'translate-x-4' : 'translate-x-0'}"></div>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // 7. TAB 2: TEAM FORMATION
+    // =========================================================================
+    function handleRosterDragStart(e, charId) {
+      const char = CHAR_MAP[charId];
+      if (!char || isCharacterLockedInPool(char)) {
+        e.preventDefault();
+        return;
+      }
+      e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'rosterChar', charId }));
+    }
+
+    function selectCharForClick(charId) {
+      const char = CHAR_MAP[charId];
+      if (!char || isCharacterLockedInPool(char)) {
+        showToast(`${char ? char.name : 'Character'} is unavailable (0 uses left or Rover attribute locked).`);
+        return;
+      }
+      state.selectedCharForClickSlot = state.selectedCharForClickSlot === charId ? null : charId;
+      renderApp();
+    }
+
+    function assignCharToTeamSlot(teamId, slotIndex, charId) {
+      const team = state.teams.find(t => t.id === teamId);
+      const char = CHAR_MAP[charId];
+      if (!team || !char) return;
+
+      if (team.slots.includes(charId) && team.slots[slotIndex] !== charId) {
+        showToast(`${char.name} is already in this team!`);
+        return;
+      }
+
+      if (team.slots[slotIndex] !== charId && isCharacterLockedInPool(char)) {
+        showToast(`${char.name} has reached their use limit or Rover attribute is locked!`);
+        return;
+      }
+
+      const prevCharId = team.slots[slotIndex];
+      team.slots[slotIndex] = charId;
+      if (!team.modes) team.modes = {};
+      if (prevCharId && prevCharId !== charId) {
+        delete team.modes[prevCharId];
+      }
+      if (Array.isArray(char.dualModes) && char.dualModes.length > 0 && !team.modes[charId]) {
+        team.modes[charId] = char.dualModes[0];
+      }
+
+      state.selectedCharForClickSlot = null;
+      saveState();
+      renderApp();
+    }
+
+    function handleSlotDrop(e, teamId, slotIndex) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('drag-over-target');
+      try {
+        const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+        if (data.type === 'rosterChar' && data.charId) {
+          assignCharToTeamSlot(teamId, slotIndex, data.charId);
+        }
+      } catch (err) {
+        console.warn(err);
+      }
+    }
+
+    function handleSlotClick(teamId, slotIndex) {
+      if (state.selectedCharForClickSlot) {
+        assignCharToTeamSlot(teamId, slotIndex, state.selectedCharForClickSlot);
+      }
+    }
+
+    function removeCharFromSlot(e, teamId, slotIndex) {
+      e.stopPropagation();
+      const team = state.teams.find(t => t.id === teamId);
+      if (!team) return;
+      const oldId = team.slots[slotIndex];
+      team.slots[slotIndex] = null;
+      if (oldId && team.modes) delete team.modes[oldId];
+      saveState();
+      renderApp();
+    }
+
+    function setDualModeForTeamChar(teamId, charId, modeLabel) {
+      const team = state.teams.find(t => t.id === teamId);
+      if (!team) return;
+      if (!team.modes) team.modes = {};
+      try {
+        team.modes[charId] = decodeURIComponent(modeLabel);
+      } catch (e) {
+        team.modes[charId] = modeLabel;
+      }
+      saveState();
+      renderApp();
+    }
+
+    function addTeamForBoss(bossCategory, defaultLabel) {
+      const existingCount = state.teams.filter(t => t.bossCategory === bossCategory).length;
+      const newTeam = {
+        id: `team_${bossCategory}_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        bossCategory,
+        name: `${defaultLabel} #${existingCount + 1}`,
+        slots: [null, null, null],
+        modes: {}
+      };
+      state.teams.push(newTeam);
+      saveState();
+      renderApp();
+      showToast(`Added ${newTeam.name}`);
+    }
+
+    function deleteTeam(teamId) {
+      state.teams = state.teams.filter(t => t.id !== teamId);
+      state.placements = state.placements.filter(p => p.teamId !== teamId);
+      saveState();
+      renderApp();
+      showToast('Team removed.');
+    }
+
+    function renameTeam(teamId, newName) {
+      const team = state.teams.find(t => t.id === teamId);
+      if (team && newName.trim()) {
+        team.name = newName.trim();
+        saveState();
+      }
+    }
+
+    function renderTab2() {
+      const activeRoverId = getActiveRoverId();
+      const activeRoverChar = activeRoverId ? CHAR_MAP[activeRoverId] : null;
+
+      const ownedChars = state.ownedIds
+        .map(id => CHAR_MAP[id])
+        .filter(Boolean)
+        .filter(c => {
+          const matchAttr = state.tab2AttrFilter === 'All' || c.attribute === state.tab2AttrFilter;
+          const matchMech = state.tab2MechFilter === 'All' || (c.mechanics || []).includes(state.tab2MechFilter);
+          return matchAttr && matchMech;
+        });
+
+      const bossSections = [
+        ...SEASON_BOSSES.map(b => ({
+          key: b.id,
+          name: b.name,
+          title: b.name,
+          img: b.img,
+          subtitle: b.title,
+          resistAttr: b.resistAttr,
+          mechanic: b.mechanic,
+          description: b.description,
+          isFiller: false
+        })),
+        {
+          key: 'filler',
+          name: 'Filler / Flex Teams',
+          title: 'Filler / Flex Teams',
+          img: null,
+          subtitle: 'General Utility & Round 1 Softener Squads',
+          resistAttr: null,
+          mechanic: null,
+          description: 'Form versatile teams that do not target a specific boss mechanic—ideal for Matrix Mimic stages or weakening bosses in Round 1.',
+          isFiller: true
+        }
+      ];
+
+      const allMechanicsSet = new Set(['All']);
+      CHARACTERS.forEach(c => (c.mechanics || []).forEach(m => allMechanicsSet.add(m)));
+      const allMechanicsList = Array.from(allMechanicsSet);
+
+      return `
+        <div class="space-y-3">
+          <!-- Top Bar for Tab 2 with Share as Image -->
+          <div class="flex flex-wrap items-center justify-between gap-2 bg-[#121722] border border-slate-800 rounded-2xl px-4 py-2.5">
+            <div class="text-xs text-slate-300">
+              <strong class="text-white">Step 2: Team Formation</strong> — Build 3-Resonator squads for each seasonal boss or <strong class="text-amber-300">Filler / Flex Teams</strong>.
+              ${activeRoverChar ? `<span class="ml-2 px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold">Rover Locked to ${activeRoverChar.attribute}</span>` : ''}
+            </div>
+            ${shareBtnHTML()}
+          </div>
+
+          <div class="flex flex-col lg:flex-row gap-4 items-start">
+            <!-- LEFT / TOP FROZEN PANE (50% VIEWPORT) -->
+            <aside class="w-full lg:w-1/2 lg:sticky lg:top-[106px] lg:max-h-[calc(100vh-122px)] flex flex-col bg-[#121722] border border-slate-800 rounded-2xl overflow-hidden shadow-xl z-20">
+              <div class="p-3.5 border-b border-slate-800 bg-[#151b28] space-y-2.5 shrink-0">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h2 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                      <span>Available Owned Resonators</span>
+                      <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">${ownedChars.length}</span>
+                    </h2>
+                    <p class="text-[11px] text-slate-400">
+                      Drag a character into a team slot—or <strong class="text-amber-300">click a character then click any empty slot</strong>.
+                    </p>
+                  </div>
+                  ${state.selectedCharForClickSlot && CHAR_MAP[state.selectedCharForClickSlot] ? `
+                    <button onclick="state.selectedCharForClickSlot=null; renderApp();" class="text-xs px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-bold animate-pulse">
+                      Selected: ${CHAR_MAP[state.selectedCharForClickSlot].name} (Click Slot) ✕
+                    </button>
+                  ` : ''}
+                </div>
+
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <select onchange="state.tab2AttrFilter=this.value; renderApp();" class="px-2 py-1 rounded-lg bg-slate-950 border border-slate-700 text-xs text-slate-200">
+                    <option value="All" ${state.tab2AttrFilter==='All'?'selected':''}>All Attributes</option>
+                    ${Object.keys(ATTRIBUTES).map(a => `<option value="${a}" ${state.tab2AttrFilter===a?'selected':''}>${a}</option>`).join('')}
+                  </select>
+                  <select onchange="state.tab2MechFilter=this.value; renderApp();" class="px-2 py-1 rounded-lg bg-slate-950 border border-slate-700 text-xs text-slate-200">
+                    ${allMechanicsList.map(m => `<option value="${m}" ${state.tab2MechFilter===m?'selected':''}>${m === 'All' ? 'All Mechanics' : m}</option>`).join('')}
+                  </select>
+                </div>
+              </div>
+
+              <div class="p-3 overflow-y-auto max-h-[340px] lg:max-h-none flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                ${ownedChars.length === 0 ? `
+                  <div class="col-span-full text-center py-8 text-xs text-slate-400">
+                    No characters selected in Tab 1. Switch to <strong>1. Character Checklist</strong> to toggle on your Resonators!
+                  </div>
+                ` : ownedChars.map(char => {
+                  const maxUses = getMaxUses(char);
+                  const remUses = getCharRemainingUses(char.id);
+                  const locked = isCharacterLockedInPool(char);
+                  const isSelected = state.selectedCharForClickSlot === char.id;
+                  const attr = ATTRIBUTES[char.attribute] || ATTRIBUTES.Spectro;
+                  const isLucilla = char.id === 'lucilla';
+                  const hasDmg = Array.isArray(char.damageTypes) && char.damageTypes.length > 0;
+                  const hasBuffs = Array.isArray(char.buffs) && char.buffs.length > 0;
+                  const hasMechs = Array.isArray(char.mechanics) && char.mechanics.length > 0;
+
+                  return `
+                    <div
+                      draggable="${!locked}"
+                      ondragstart="handleRosterDragStart(event, '${char.id}')"
+                      onclick="selectCharForClick('${char.id}')"
+                      title="${locked ? 'Unavailable (0 uses left or Rover attribute locked)' : 'Drag to a team slot or click to select'}"
+                      class="rounded-xl p-2.5 border transition select-none flex flex-col justify-between gap-2 ${
+                        locked
+                          ? 'bg-slate-950/80 border-slate-800/80 opacity-45 cursor-not-allowed'
+                          : isSelected
+                            ? 'bg-amber-500/15 border-amber-400 ring-2 ring-amber-400/50 cursor-pointer'
+                            : 'bg-[#181f2e] border-slate-700/80 hover:border-amber-500/50 cursor-grab active:cursor-grabbing'
+                      }"
+                    >
+                      <div class="flex items-start justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                          ${renderCharacterAvatarHTML(char, 'w-11 h-11')}
+                          <div class="min-w-0">
+                            <div class="font-bold text-xs sm:text-sm text-white truncate">${char.name}</div>
+                            <div class="flex flex-wrap items-center gap-1 mt-0.5">
+                              <span class="text-[10px] font-bold px-1.5 py-0.2 rounded ${attr.bg} ${attr.text}">${char.attribute}</span>
+                              ${hasDmg ? `<span class="text-[10px] text-slate-400">${char.damageTypes.join(' / ')}</span>` : ''}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="shrink-0 text-right">
+                          <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                            locked
+                              ? 'bg-rose-950/70 text-rose-300 border-rose-700/60'
+                              : remUses === 2
+                                ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/40'
+                                : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'
+                          }">
+                            Uses: ${remUses}/${maxUses}
+                          </span>
+                          ${isLucilla ? `<div class="text-[9px] text-amber-400 font-semibold mt-0.5">+1 Season</div>` : ''}
+                        </div>
+                      </div>
+
+                      ${(hasMechs || hasBuffs) ? `
+                        <div class="space-y-1 pt-1 border-t border-slate-800/80">
+                          ${hasMechs ? `
+                            <div class="flex flex-wrap gap-1">
+                              ${char.mechanics.map(m => `
+                                <span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-200 border border-slate-700">${m}</span>
+                              `).join('')}
+                            </div>
+                          ` : ''}
+                          ${hasBuffs ? `
+                            <div class="text-[10px] text-amber-300/90 truncate" title="${char.buffs.join(', ')}">
+                              ✦ Buffs: ${char.buffs.join(', ')}
+                            </div>
+                          ` : ''}
+                        </div>
+                      ` : ''}
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </aside>
+
+            <!-- RIGHT / BOTTOM BOSSES & TEAM SLOTS PANE (50% VIEWPORT) -->
+            <section class="w-full lg:w-1/2 space-y-4">
+              ${bossSections.map(boss => {
+                const bossTeams = state.teams.filter(t => t.bossCategory === boss.key);
+
+                return `
+                  <div class="rounded-2xl bg-[#121722] border border-slate-800 overflow-hidden shadow-lg">
+                    <div class="p-3.5 bg-gradient-to-r from-[#182032] to-[#121722] border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                      <div class="flex items-center gap-3">
+                        ${boss.img ? renderBossAvatarHTML(boss, 'w-12 h-12') : ''}
+                        <div>
+                          <div class="flex flex-wrap items-center gap-2">
+                            <h3 class="font-display font-bold text-lg text-white">${boss.title}</h3>
+                            ${boss.resistAttr ? `
+                              <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-orange-500/15 text-orange-300 border border-orange-500/40">
+                                Resists: ${boss.resistAttr}
+                              </span>
+                            ` : `
+                              <span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700">
+                                No Attribute RES
+                              </span>
+                            `}
+                            ${boss.mechanic ? `
+                              <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/40">
+                                Mechanic: ${boss.mechanic}
+                              </span>
+                            ` : ''}
+                          </div>
+                          <p class="text-[11px] text-slate-400 mt-1">${boss.description}</p>
+                        </div>
+                      </div>
+
+                      <button
+                        onclick="addTeamForBoss('${boss.key}', '${boss.isFiller ? 'Filler / Flex' : boss.title.split(' ')[0] + ' Squad'}')"
+                        class="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 text-xs font-semibold flex items-center gap-1 transition shrink-0"
+                      >
+                        <span>+ Add Team</span>
+                      </button>
+                    </div>
+
+                    <div class="p-3.5 space-y-3">
+                      ${bossTeams.length === 0 ? `
+                        <div class="text-center py-4 text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">
+                          No teams created yet. Click <strong>+ Add Team</strong> above.
+                        </div>
+                      ` : bossTeams.map(team => {
+                        const evalInfo = evaluateTeamAgainstBosses(team, boss.isFiller ? [] : [boss]);
+                        const slottedChars = getTeamCharacters(team);
+                        const dualModeChars = slottedChars.filter(c => Array.isArray(c.dualModes) && c.dualModes.length > 0);
+
+                        return `
+                          <div class="rounded-xl bg-[#181f2e] border border-slate-700/80 p-3 space-y-2.5">
+                            <div class="flex items-center justify-between gap-2">
+                              <input
+                                type="text"
+                                value="${team.name}"
+                                onchange="renameTeam('${team.id}', this.value)"
+                                class="bg-transparent text-xs font-bold text-slate-200 focus:text-amber-300 focus:outline-none border-b border-transparent focus:border-amber-500 px-1 py-0.5 w-48"
+                              />
+                              <button onclick="deleteTeam('${team.id}')" class="text-slate-500 hover:text-rose-400 text-xs px-1.5 py-0.5 rounded" title="Delete Team">
+                                ✕
+                              </button>
+                            </div>
+
+                            <!-- 3 Character Slots -->
+                            <div class="grid grid-cols-3 gap-2">
+                              ${[0, 1, 2].map(slotIdx => {
+                                const charId = team.slots[slotIdx];
+                                const char = charId ? CHAR_MAP[charId] : null;
+                                const isResisted = char && boss.resistAttr && char.attribute === boss.resistAttr;
+
+                                if (!char) {
+                                  return `
+                                    <div
+                                      ondragover="event.preventDefault(); this.classList.add('drag-over-target');"
+                                      ondragleave="this.classList.remove('drag-over-target');"
+                                      ondrop="handleSlotDrop(event, '${team.id}', ${slotIdx})"
+                                      onclick="handleSlotClick('${team.id}', ${slotIdx})"
+                                      class="h-20 rounded-xl border border-dashed ${
+                                        state.selectedCharForClickSlot
+                                          ? 'border-amber-400 bg-amber-500/10 cursor-pointer'
+                                          : 'border-slate-700 bg-slate-900/60 hover:border-slate-500'
+                                      } flex flex-col items-center justify-center text-[11px] text-slate-500 transition p-1 text-center"
+                                    >
+                                      <span>+ Slot ${slotIdx + 1}</span>
+                                    </div>
+                                  `;
+                                }
+
+                                const cAttr = ATTRIBUTES[char.attribute] || ATTRIBUTES.Spectro;
+                                return `
+                                  <div
+                                    ondragover="event.preventDefault(); this.classList.add('drag-over-target');"
+                                    ondragleave="this.classList.remove('drag-over-target');"
+                                    ondrop="handleSlotDrop(event, '${team.id}', ${slotIdx})"
+                                    onclick="handleSlotClick('${team.id}', ${slotIdx})"
+                                    class="relative rounded-xl p-2 border transition flex flex-col items-center text-center ${
+                                      isResisted
+                                        ? 'bg-orange-950/50 border-2 border-orange-500 resisted-alert'
+                                        : 'bg-slate-900/90 border-slate-700'
+                                    }"
+                                  >
+                                    <button
+                                      onclick="removeCharFromSlot(event, '${team.id}', ${slotIdx})"
+                                      class="absolute top-1 right-1 w-4 h-4 rounded-full bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white text-[10px] flex items-center justify-center"
+                                      title="Remove from slot"
+                                    >✕</button>
+
+                                    ${isResisted ? `
+                                      <button
+                                        onclick="event.stopPropagation(); openResistModal('${char.name}', '${char.attribute}', '${boss.title}')"
+                                        class="absolute top-1 left-1 w-5 h-5 rounded-full bg-orange-500 text-slate-950 font-extrabold text-xs flex items-center justify-center shadow-md hover:scale-110 transition"
+                                        title="Resisted damage type (Click for info)"
+                                      >!</button>
+                                    ` : ''}
+
+                                    ${renderCharacterAvatarHTML(char, 'w-10 h-10')}
+                                    <div class="text-[11px] font-bold text-white truncate w-full mt-1">${char.name}</div>
+                                    <span class="text-[9px] font-semibold ${isResisted ? 'text-orange-300' : cAttr.text}">${char.attribute}</span>
+                                  </div>
+                                `;
+                              }).join('')}
+                            </div>
+
+                            <!-- Dual Mode Toggle Reminders for Slotted Characters -->
+                            ${dualModeChars.length > 0 ? `
+                              <div class="space-y-1.5 pt-1">
+                                ${dualModeChars.map(dc => {
+                                  const selectedMode = (team.modes && team.modes[dc.id]) || dc.dualModes[0];
+                                  return `
+                                    <div class="p-2 rounded-lg bg-slate-950/80 border border-purple-500/35 flex flex-wrap items-center justify-between gap-1.5 text-[10.5px]">
+                                      <span class="text-purple-300 font-semibold">${dc.name} Mode (select in-game):</span>
+                                      <div class="flex flex-wrap gap-1">
+                                        ${dc.dualModes.map(modeOpt => `
+                                          <button
+                                            type="button"
+                                            onclick="setDualModeForTeamChar('${team.id}', '${dc.id}', '${encodeURIComponent(modeOpt)}')"
+                                            class="px-2 py-0.5 rounded border text-[10px] font-semibold transition ${
+                                              selectedMode === modeOpt
+                                                ? 'bg-purple-500/25 text-purple-200 border-purple-400'
+                                                : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200'
+                                            }"
+                                          >${modeOpt}</button>
+                                        `).join('')}
+                                      </div>
+                                    </div>
+                                  `;
+                                }).join('')}
+                              </div>
+                            ` : ''}
+
+                            <!-- Special Mechanics Readout Below Icons -->
+                            <div class="pt-2 border-t border-slate-800/90 flex flex-wrap items-center justify-between gap-1.5">
+                              <div class="flex flex-wrap items-center gap-1">
+                                <span class="text-[10px] text-slate-400 mr-1">Mechanics:</span>
+                                ${evalInfo.teamMechs.length === 0 ? `
+                                  <span class="text-[10px] text-slate-500 italic">Slot Resonators to view synergy</span>
+                                ` : evalInfo.teamMechs.map(mech => {
+                                  const isMatched = boss.mechanic && mech === boss.mechanic;
+                                  return `
+                                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md border ${
+                                      isMatched
+                                        ? 'bg-emerald-500/25 text-emerald-300 border-emerald-400 shadow-xs'
+                                        : 'bg-slate-900 text-slate-300 border-slate-700'
+                                    }">
+                                      ${isMatched ? '✓ ' : ''}${mech}
+                                    </span>
+                                  `;
+                                }).join('')}
+                              </div>
+
+                              ${evalInfo.hasResistanceWarning ? `
+                                <button
+                                  onclick="openResistModal('${evalInfo.resistedDetails[0].char.name}', '${evalInfo.resistedDetails[0].char.attribute}', '${boss.title}')"
+                                  class="text-[10px] font-bold px-2 py-0.5 rounded bg-orange-500/20 text-orange-300 border border-orange-500/50 flex items-center gap-1"
+                                >
+                                  <span class="w-3.5 h-3.5 rounded-full bg-orange-500 text-slate-950 font-extrabold inline-flex items-center justify-center text-[9px]">!</span>
+                                  Resisted damage type
+                                </button>
+                              ` : ''}
+                            </div>
+                          </div>
+                        `;
+                      }).join('')}
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </section>
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // 8. TAB 3: ROUND PLANNING (4 SEASONAL BOSSES + 5TH MATRIX MIMIC COLUMN)
+    // =========================================================================
+    function isTeamPlacedInTab3(teamId) {
+      return state.placements.some(p => p.teamId === teamId);
+    }
+
+    function assignTeamToGrid(teamId, roundIndex, startBossIndex) {
+      const team = state.teams.find(t => t.id === teamId);
+      if (!team || !isTeamComplete(team)) {
+        showToast('Add at least 1 character to this team in Tab 2 first.');
+        return;
+      }
+      if (isTeamPlacedInTab3(teamId)) {
+        showToast(`${team.name} is already assigned! Each set team can only be used once.`);
+        return;
+      }
+      state.placements.push({
+        id: `place_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        teamId,
+        roundIndex,
+        startBossIndex,
+        spanCount: 1,
+        score: 0
+      });
+      state.selectedTeamForClickAssign = null;
+      saveState();
+      renderApp();
+    }
+
+    function handleTeamPaletteDragStart(e, teamId) {
+      if (isTeamPlacedInTab3(teamId)) {
+        e.preventDefault();
+        return;
+      }
+      e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'setTeam', teamId }));
+    }
+
+    function handleGridCellDrop(e, roundIndex, bossIndex) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('drag-over-target');
+      try {
+        const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+        if (data.type === 'setTeam' && data.teamId) {
+          assignTeamToGrid(data.teamId, roundIndex, bossIndex);
+        }
+      } catch (err) {
+        console.warn(err);
+      }
+    }
+
+    function handleGridCellClick(roundIndex, bossIndex) {
+      if (state.selectedTeamForClickAssign) {
+        assignTeamToGrid(state.selectedTeamForClickAssign, roundIndex, bossIndex);
+      }
+    }
+
+    function updatePlacementSpan(placementId, delta) {
+      const p = state.placements.find(item => item.id === placementId);
+      if (!p) return;
+      const cellPlacements = state.placements.filter(
+        item => item.roundIndex === p.roundIndex && item.startBossIndex === p.startBossIndex
+      );
+      const isFinalInCell = cellPlacements.length > 0 && cellPlacements[cellPlacements.length - 1].id === p.id;
+      if (delta > 0 && !isFinalInCell) {
+        showToast('Only the final team clearing a boss can extend to consecutive bosses.');
+        return;
+      }
+      const maxSpan = ALL_ROUND_COLS.length - p.startBossIndex;
+      p.spanCount = Math.max(1, Math.min(maxSpan, p.spanCount + delta));
+      saveState();
+      renderApp();
+    }
+
+    function removePlacement(placementId) {
+      state.placements = state.placements.filter(p => p.id !== placementId);
+      saveState();
+      renderApp();
+      showToast('Team unassigned from round.');
+    }
+
+    function addRoundRow() {
+      state.roundsCount += 1;
+      saveState();
+      renderApp();
+      showToast(`Added Round ${state.roundsCount}`);
+    }
+
+    function removeLastRoundRow() {
+      if (state.roundsCount <= 1) return;
+      const targetIdx = state.roundsCount - 1;
+      state.placements = state.placements.filter(p => p.roundIndex !== targetIdx);
+      state.roundsCount -= 1;
+      saveState();
+      renderApp();
+    }
+
+    function getRoundMultiplierLabel(roundIdx) {
+      if (roundIdx === 0) return '1.00× Score';
+      if (roundIdx === 1) return '1.15× Score';
+      return '1.25× Max Score';
+    }
+
+    function renderAssignedTeamCard(placement, isResultsMode = false, isFinalInCell = true) {
+      const team = state.teams.find(t => t.id === placement.teamId);
+      if (!team) return '';
+
+      const effectiveSpan = isFinalInCell ? placement.spanCount : 1;
+      const coveredBosses = ALL_ROUND_COLS.slice(
+        placement.startBossIndex,
+        placement.startBossIndex + effectiveSpan
+      );
+      const evalInfo = evaluateTeamAgainstBosses(team, coveredBosses);
+      const chars = getTeamCharacters(team);
+      const maxSpan = ALL_ROUND_COLS.length - placement.startBossIndex;
+
+      return `
+        <div class="rounded-xl p-2.5 border transition shadow-md ${
+          evalInfo.hasResistanceWarning
+            ? 'bg-orange-950/40 border-2 border-orange-500'
+            : isFinalInCell
+              ? 'bg-[#181f2e] border-emerald-500/45'
+              : 'bg-[#181f2e] border-slate-700'
+        }">
+          <div class="flex items-center justify-between gap-1.5 mb-2">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span class="font-bold text-xs text-white truncate">${team.name}</span>
+              <span class="text-[9.5px] font-bold px-1.5 py-0.2 rounded ${
+                isFinalInCell
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                  : 'bg-slate-800 text-slate-400 border border-slate-700'
+              } shrink-0">
+                ${isFinalInCell ? 'Clears' : 'No Clear'}
+              </span>
+              ${isFinalInCell && effectiveSpan > 1 ? `
+                <span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40 shrink-0">
+                  Spans ${effectiveSpan} →
+                </span>
+              ` : ''}
+            </div>
+
+            ${!isResultsMode ? `
+              <button onclick="removePlacement('${placement.id}')" class="text-slate-400 hover:text-rose-400 text-xs px-1" title="Unassign team">✕</button>
+            ` : ''}
+          </div>
+
+          <!-- Character Icons Row -->
+          <div class="flex items-center gap-1.5 mb-2">
+            ${chars.map(c => {
+              const resistedBoss = coveredBosses.find(b => b.resistAttr === c.attribute);
+              return `
+                <div class="relative flex items-center gap-1.5 bg-slate-900/90 border ${
+                  resistedBoss ? 'border-orange-500 bg-orange-950/60' : 'border-slate-800'
+                } rounded-lg p-1 pr-2 min-w-0 flex-1">
+                  ${renderCharacterAvatarHTML(c, 'w-7 h-7')}
+                  <div class="min-w-0">
+                    <div class="text-[10px] font-semibold text-white truncate">${c.name}</div>
+                    <div class="text-[9px] ${resistedBoss ? 'text-orange-300 font-bold' : ATTRIBUTES[c.attribute].text}">${c.attribute}</div>
+                  </div>
+                  ${resistedBoss ? `
+                    <button
+                      onclick="openResistModal('${c.name}', '${c.attribute}', '${resistedBoss.name}')"
+                      class="w-4 h-4 rounded-full bg-orange-500 text-slate-950 font-extrabold text-[10px] flex items-center justify-center shrink-0"
+                      title="Resisted damage type"
+                    >!</button>
+                  ` : ''}
+                </div>
+              `;
+            }).join('')}
+          </div>
+
+          <!-- Special Mechanics Badges -->
+          <div class="flex flex-wrap items-center gap-1 mb-2">
+            ${evalInfo.teamMechs.map(m => {
+              const matched = evalInfo.matchedMechanics.includes(m);
+              return `
+                <span class="text-[10px] font-semibold px-1.5 py-0.2 rounded border ${
+                  matched
+                    ? 'bg-emerald-500/25 text-emerald-300 border-emerald-400'
+                    : 'bg-slate-900 text-slate-400 border-slate-800'
+                }">
+                  ${matched ? '✓ ' : ''}${m}
+                </span>
+              `;
+            }).join('')}
+            ${evalInfo.hasResistanceWarning ? `
+              <button
+                onclick="openResistModal('${evalInfo.resistedDetails[0].char.name}', '${evalInfo.resistedDetails[0].char.attribute}', '${evalInfo.resistedDetails[0].boss.name}')"
+                class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-orange-500/20 text-orange-300 border border-orange-500/50"
+              >
+                ! Resisted damage type
+              </button>
+            ` : ''}
+          </div>
+
+          ${!isResultsMode ? `
+            <div class="pt-1.5 border-t border-slate-800/90 flex items-center justify-between gap-2 text-[10px]">
+              ${isFinalInCell ? `
+                <span class="text-slate-400">Boss Coverage:</span>
+                <div class="flex items-center gap-1">
+                  <button
+                    onclick="updatePlacementSpan('${placement.id}', -1)"
+                    ${effectiveSpan <= 1 ? 'disabled' : ''}
+                    class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-35 text-slate-200 font-semibold"
+                  >− Shrink</button>
+                  <span class="px-1.5 font-bold text-sky-300">${effectiveSpan} Boss${effectiveSpan > 1 ? 'es' : ''}</span>
+                  <button
+                    onclick="updatePlacementSpan('${placement.id}', 1)"
+                    ${effectiveSpan >= maxSpan ? 'disabled' : ''}
+                    class="px-2 py-0.5 rounded bg-sky-500/20 hover:bg-sky-500/30 disabled:opacity-35 text-sky-300 border border-sky-500/30 font-semibold"
+                  >Extend →</button>
+                </div>
+              ` : `
+                <span class="text-slate-500 italic">Earlier attempt (cannot extend until boss is cleared)</span>
+              `}
+            </div>
+          ` : `
+            <div class="pt-2 border-t border-slate-800/90 flex items-center justify-between gap-2">
+              <label class="text-[11px] font-semibold text-amber-300">Earned Score:</label>
+              <input
+                type="number"
+                min="0"
+                max="999999"
+                value="${placement.score || ''}"
+                placeholder="0"
+                oninput="updatePlacementScore('${placement.id}', this.value)"
+                class="w-28 px-2.5 py-1 rounded-lg bg-slate-950 border border-amber-500/50 text-right font-mono font-bold text-sm text-white focus:outline-none focus:border-amber-400"
+              />
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    function renderTab3() {
+      const formedTeams = state.teams.filter(isTeamComplete);
+
+      return `
+        <div class="space-y-4">
+          <!-- Dismissible Beginner Tip Message Box (Restored) -->
+          ${state.showRoundTip ? `
+            <div class="p-3.5 rounded-2xl bg-gradient-to-r from-sky-500/15 via-slate-900 to-emerald-500/15 border border-sky-500/40 flex items-start justify-between gap-3">
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-xl bg-sky-500/20 text-sky-300 flex items-center justify-center font-bold shrink-0">💡</div>
+                <div class="text-xs text-slate-200 leading-relaxed">
+                  <strong class="text-sky-300 text-sm block mb-0.5">Strategy Tip for High Scores:</strong>
+                  Prioritize <strong class="text-amber-300">weaker / filler teams in earlier rounds (Round 1)</strong> to chip down boss HP, and save your <strong class="text-emerald-300">strongest synergized teams for later rounds (Round 2 &amp; 3+)</strong> where score multipliers are higher! Only the <strong class="text-white">final team</strong> assigned to a boss clears it and can extend across consecutive bosses.
+                </div>
+              </div>
+              <button onclick="state.showRoundTip = false; saveState(); renderApp();" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 shrink-0" title="Close tip">
+                ✕
+              </button>
+            </div>
+          ` : `
+            <div class="flex justify-end">
+              <button onclick="state.showRoundTip = true; saveState(); renderApp();" class="text-xs text-sky-400 hover:underline">
+                💡 Show Round Strategy Tip
+              </button>
+            </div>
+          `}
+
+          <!-- Set Teams Palette -->
+          <div class="p-3.5 rounded-2xl bg-[#121722] border border-slate-800 space-y-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 class="text-sm font-bold text-white">Formed Teams Available for Deployment (1 Use per Set Team)</h2>
+                <p class="text-[11px] text-slate-400">Drag a team into any Boss, Matrix Mimic &amp; Round slot below—or click a team then click a cell.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                ${state.selectedTeamForClickAssign ? `
+                  <button onclick="state.selectedTeamForClickAssign=null; renderApp();" class="text-xs px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-bold animate-pulse">
+                    Selected: ${state.teams.find(t=>t.id===state.selectedTeamForClickAssign)?.name} (Click Grid Cell) ✕
+                  </button>
+                ` : ''}
+                ${shareBtnHTML()}
+              </div>
+            </div>
+
+            ${formedTeams.length === 0 ? `
+              <div class="p-4 rounded-xl bg-slate-950/70 border border-dashed border-slate-800 text-center text-xs text-slate-400">
+                No teams formed yet! Go to <strong>Tab 2: Team Formation</strong> and slot Resonators into teams first.
+              </div>
+            ` : `
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                ${formedTeams.map(team => {
+                  const placed = isTeamPlacedInTab3(team.id);
+                  const chars = getTeamCharacters(team);
+                  const mechs = getTeamCombinedMechanics(team);
+                  const selected = state.selectedTeamForClickAssign === team.id;
+
+                  return `
+                    <div
+                      draggable="${!placed}"
+                      ondragstart="handleTeamPaletteDragStart(event, '${team.id}')"
+                      onclick="if(!${placed}){ state.selectedTeamForClickAssign = (${selected} ? null : '${team.id}'); renderApp(); }"
+                      class="rounded-xl p-2.5 border transition select-none ${
+                        placed
+                          ? 'bg-slate-950/80 border-slate-800 opacity-45 cursor-not-allowed'
+                          : selected
+                            ? 'bg-amber-500/15 border-amber-400 ring-2 ring-amber-400/50 cursor-pointer'
+                            : 'bg-[#181f2e] border-slate-700 hover:border-amber-500/60 cursor-grab active:cursor-grabbing'
+                      }"
+                    >
+                      <div class="flex items-center justify-between gap-1 mb-1.5">
+                        <span class="font-bold text-xs text-white truncate">${team.name}</span>
+                        <span class="text-[10px] font-bold px-1.5 py-0.2 rounded ${
+                          placed ? 'bg-slate-800 text-slate-400' : 'bg-emerald-500/20 text-emerald-300'
+                        }">
+                          ${placed ? 'Assigned' : 'Ready (1/1)'}
+                        </span>
+                      </div>
+                      <div class="flex items-center gap-1.5 mb-1.5">
+                        ${chars.map(c => renderCharacterAvatarHTML(c, 'w-8 h-8')).join('')}
+                      </div>
+                      <div class="flex flex-wrap gap-1">
+                        ${mechs.map(m => `<span class="text-[9px] px-1.5 py-0.2 rounded bg-slate-900 text-slate-300 border border-slate-800">${m}</span>`).join('')}
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            `}
+          </div>
+
+          <!-- Matrix Schedule Table: 4 Seasonal Bosses + 5th Matrix Mimic Column -->
+          <div class="rounded-2xl bg-[#121722] border border-slate-800 overflow-x-auto shadow-xl">
+            <table class="w-full min-w-[1120px] border-collapse">
+              <thead>
+                <tr class="bg-[#161d2b] border-b border-slate-800">
+                  <th class="w-32 p-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400 border-r border-slate-800">
+                    Round / Mult
+                  </th>
+                  ${ALL_ROUND_COLS.map(boss => `
+                    <th class="p-3 text-left border-r last:border-r-0 border-slate-800 w-1/5">
+                      <div class="flex items-center gap-2">
+                        ${renderBossAvatarHTML(boss, 'w-9 h-9')}
+                        <div>
+                          <div class="font-display font-bold text-base text-white">${boss.name}</div>
+                          <div class="flex flex-wrap items-center gap-1 mt-0.5">
+                            ${boss.resistAttr ? `
+                              <span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-orange-500/15 text-orange-300 border border-orange-500/30">
+                                Resists ${boss.resistAttr}
+                              </span>
+                            ` : ''}
+                            ${boss.mechanic ? `
+                              <span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                                ${boss.mechanic}
+                              </span>
+                            ` : `
+                              <span class="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                                No Mechanics
+                              </span>
+                            `}
+                          </div>
+                        </div>
+                      </div>
+                    </th>
+                  `).join('')}
+                </tr>
+              </thead>
+              <tbody>
+                ${Array.from({ length: state.roundsCount }).map((_, roundIdx) => {
+                  const roundPlacements = state.placements.filter(p => p.roundIndex === roundIdx);
+
+                  return `
+                    <tr class="border-b border-slate-800/80 align-top">
+                      <td class="p-3 bg-[#141a26] border-r border-slate-800">
+                        <div class="font-display font-bold text-base text-amber-300">Round ${roundIdx + 1}</div>
+                        <div class="text-[11px] font-semibold text-slate-400 mt-0.5">${getRoundMultiplierLabel(roundIdx)}</div>
+                        <div class="text-[10px] text-slate-500 mt-1">
+                          ${roundIdx === 0 ? 'Use filler/opener teams' : 'Deploy core DPS teams'}
+                        </div>
+                      </td>
+
+                      ${ALL_ROUND_COLS.map((boss, bossIdx) => {
+                        const startingHere = roundPlacements.filter(p => p.startBossIndex === bossIdx);
+                        const spanningAcross = roundPlacements.filter((p) => {
+                          const sameOriginList = roundPlacements.filter(x => x.startBossIndex === p.startBossIndex);
+                          const isFinal = sameOriginList.length > 0 && sameOriginList[sameOriginList.length - 1].id === p.id;
+                          const effectiveSpan = isFinal ? p.spanCount : 1;
+                          return p.startBossIndex < bossIdx && (p.startBossIndex + effectiveSpan) > bossIdx;
+                        });
+
+                        return `
+                          <td
+                            ondragover="event.preventDefault(); this.classList.add('drag-over-target');"
+                            ondragleave="this.classList.remove('drag-over-target');"
+                            ondrop="handleGridCellDrop(event, ${roundIdx}, ${bossIdx})"
+                            onclick="handleGridCellClick(${roundIdx}, ${bossIdx})"
+                            class="p-2.5 border-r last:border-r-0 border-slate-800/80 min-h-[140px] transition ${
+                              state.selectedTeamForClickAssign ? 'hover:bg-amber-500/10 cursor-pointer' : ''
+                            }"
+                          >
+                            <div class="space-y-2">
+                              ${spanningAcross.map(sp => {
+                                const spTeam = state.teams.find(t => t.id === sp.teamId);
+                                return `
+                                  <div class="px-2.5 py-1.5 rounded-lg bg-sky-500/15 border border-dashed border-sky-400/60 text-[11px] text-sky-200 flex items-center justify-between">
+                                    <span>↳ Continued: <strong>${spTeam ? spTeam.name : 'Team'}</strong></span>
+                                    <span class="text-[10px] text-sky-400">Carryover</span>
+                                  </div>
+                                `;
+                              }).join('')}
+
+                              ${startingHere.map((p, idx) => renderAssignedTeamCard(p, false, idx === startingHere.length - 1)).join('')}
+
+                              <div class="py-2.5 px-2 rounded-xl border border-dashed border-slate-800 text-center text-[11px] text-slate-500 hover:border-slate-600 transition">
+                                + Drop Team Here
+                              </div>
+                            </div>
+                          </td>
+                        `;
+                      }).join('')}
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <button onclick="addRoundRow()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition">
+              + Add Round Row
+            </button>
+            ${state.roundsCount > 1 ? `
+              <button onclick="removeLastRoundRow()" class="px-3 py-2 rounded-xl bg-slate-900 hover:bg-rose-950/50 text-slate-400 hover:text-rose-300 border border-slate-800 text-xs transition">
+                Remove Last Round
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // 9. TAB 4: RESULTS
+    // =========================================================================
+    function updatePlacementScore(placementId, rawVal) {
+      const p = state.placements.find(item => item.id === placementId);
+      if (!p) return;
+      const num = Math.max(0, parseInt(rawVal, 10) || 0);
+      p.score = num;
+      saveState();
+      updateResultsSummaryBannerDOM();
+    }
+
+    function getResultsAnalytics() {
+      let totalScore = 0;
+      const scoredEntries = [];
+
+      state.placements.forEach(p => {
+        const team = state.teams.find(t => t.id === p.teamId);
+        if (!team) return;
+        const score = Number(p.score) || 0;
+        totalScore += score;
+        const roundPlacements = state.placements.filter(x => x.roundIndex === p.roundIndex && x.startBossIndex === p.startBossIndex);
+        const isFinal = roundPlacements.length > 0 && roundPlacements[roundPlacements.length - 1].id === p.id;
+        const effectiveSpan = isFinal ? p.spanCount : 1;
+        const coveredBosses = ALL_ROUND_COLS.slice(p.startBossIndex, p.startBossIndex + effectiveSpan);
+        scoredEntries.push({
+          placement: p,
+          team,
+          score,
+          roundNum: p.roundIndex + 1,
+          bossNames: coveredBosses.map(b => b.name).join(' → ')
+        });
+      });
+
+      scoredEntries.sort((a, b) => b.score - a.score);
+      const top3 = scoredEntries.slice(0, 3);
+      return { totalScore, top3 };
+    }
+
+    function getMatrixRankBadge(score) {
+      if (score >= 58000) return { label: 'MAX REWARD TIER (58,000+)', color: 'text-amber-300 border-amber-400 bg-amber-500/20' };
+      if (score >= 42000) return { label: 'S-RANK CLEAR (42,000+)', color: 'text-purple-300 border-purple-400 bg-purple-500/20' };
+      if (score >= 28000) return { label: 'A-RANK CLEAR (28,000+)', color: 'text-sky-300 border-sky-400 bg-sky-500/20' };
+      if (score > 0)      return { label: 'IN PROGRESS', color: 'text-emerald-300 border-emerald-400 bg-emerald-500/20' };
+      return { label: 'UNRECORDED', color: 'text-slate-400 border-slate-700 bg-slate-800/70' };
+    }
+
+    function renderResultsBannerInner() {
+      const { totalScore, top3 } = getResultsAnalytics();
+      const rank = getMatrixRankBadge(totalScore);
+
+      return `
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+          <div class="lg:col-span-4 p-4 rounded-2xl bg-gradient-to-br from-amber-500/20 via-[#181f2e] to-slate-950 border border-amber-500/40">
+            <div class="flex items-center justify-between gap-2">
+              <div class="text-xs font-semibold uppercase tracking-wider text-amber-300">Total Endstate Matrix Score</div>
+            </div>
+            <div class="text-3xl sm:text-4xl font-display font-bold text-white my-1 tracking-tight">
+              ${totalScore.toLocaleString()} <span class="text-sm font-sans font-normal text-slate-400">pts</span>
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-2 mt-1">
+              <span class="inline-block text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${rank.color}">
+                ${rank.label}
+              </span>
+              ${shareBtnHTML()}
+            </div>
+          </div>
+
+          <div class="lg:col-span-8">
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Top 3 Highest Scoring Teams</div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              ${[0, 1, 2].map(idx => {
+                const entry = top3[idx];
+                const medalColors = [
+                  'border-amber-400/70 bg-amber-500/10 text-amber-300',
+                  'border-slate-400/60 bg-slate-500/10 text-slate-200',
+                  'border-orange-500/60 bg-orange-500/10 text-orange-300'
+                ];
+                if (!entry || entry.score <= 0) {
+                  return `
+                    <div class="p-3 rounded-xl bg-slate-900/70 border border-slate-800 flex flex-col justify-center">
+                      <span class="text-[11px] font-bold text-slate-500">#${idx + 1} Place</span>
+                      <span class="text-xs text-slate-600 mt-1">Enter scores below to rank</span>
+                    </div>
+                  `;
+                }
+                const chars = getTeamCharacters(entry.team);
+                return `
+                  <div class="p-3 rounded-xl border ${medalColors[idx]} flex flex-col justify-between gap-1.5">
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs font-extrabold">#${idx + 1} • ${entry.team.name}</span>
+                      <span class="font-mono font-bold text-sm text-white">${entry.score.toLocaleString()}</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      ${chars.map(c => renderCharacterAvatarHTML(c, 'w-6 h-6')).join('')}
+                      <span class="text-[10px] text-slate-400 truncate ml-1">R${entry.roundNum}: ${entry.bossNames}</span>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function updateResultsSummaryBannerDOM() {
+      const container = document.getElementById('resultsSummaryBanner');
+      if (container) {
+        container.innerHTML = renderResultsBannerInner();
+      }
+    }
+
+    function renderTab4() {
+      return `
+        <div class="space-y-4">
+          <div id="resultsSummaryBanner" class="p-4 rounded-2xl bg-[#121722] border border-slate-800 shadow-xl">
+            ${renderResultsBannerInner()}
+          </div>
+
+          ${state.placements.length === 0 ? `
+            <div class="p-8 rounded-2xl bg-[#121722] border border-dashed border-slate-700 text-center space-y-2">
+              <div class="text-base font-bold text-white">No Teams Scheduled in Rounds Yet</div>
+              <p class="text-xs text-slate-400 max-w-md mx-auto">
+                Assign your formed teams into Rounds &amp; Bosses in <strong>Tab 3: Round Planning</strong> first, then return here to enter the actual scores earned by each team!
+              </p>
+              <button onclick="switchTab(3)" class="mt-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs">
+                Go to Tab 3: Round Planning
+              </button>
+            </div>
+          ` : `
+            <div class="rounded-2xl bg-[#121722] border border-slate-800 overflow-x-auto shadow-xl">
+              <table class="w-full min-w-[1120px] border-collapse">
+                <thead>
+                  <tr class="bg-[#161d2b] border-b border-slate-800">
+                    <th class="w-32 p-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400 border-r border-slate-800">
+                      Round
+                    </th>
+                    ${ALL_ROUND_COLS.map(boss => `
+                      <th class="p-3 text-left border-r last:border-r-0 border-slate-800 w-1/5">
+                        <div class="font-display font-bold text-base text-white">${boss.name}</div>
+                        <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                          ${boss.resistAttr ? `
+                            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-300 border border-orange-500/30">
+                              Resists ${boss.resistAttr}
+                            </span>
+                          ` : ''}
+                          ${boss.mechanic ? `
+                            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                              ${boss.mechanic}
+                            </span>
+                          ` : `
+                            <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                              No Mechanics
+                            </span>
+                          `}
+                        </div>
+                      </th>
+                    `).join('')}
+                  </tr>
+                </thead>
+                <tbody>
+                  ${Array.from({ length: state.roundsCount }).map((_, roundIdx) => {
+                    const roundPlacements = state.placements.filter(p => p.roundIndex === roundIdx);
+                    const roundTotal = roundPlacements.reduce((s, p) => s + (Number(p.score) || 0), 0);
+
+                    return `
+                      <tr class="border-b border-slate-800/80 align-top">
+                        <td class="p-3 bg-[#141a26] border-r border-slate-800">
+                          <div class="font-display font-bold text-base text-amber-300">Round ${roundIdx + 1}</div>
+                          <div class="text-[11px] font-semibold text-slate-400 mt-0.5">${getRoundMultiplierLabel(roundIdx)}</div>
+                          <div class="mt-2 pt-2 border-t border-slate-800 text-[11px]">
+                            <span class="text-slate-500 block">Round Subtotal:</span>
+                            <strong class="text-white font-mono">${roundTotal.toLocaleString()}</strong>
+                          </div>
+                        </td>
+
+                        ${ALL_ROUND_COLS.map((boss, bossIdx) => {
+                          const startingHere = roundPlacements.filter(p => p.startBossIndex === bossIdx);
+                          const spanningAcross = roundPlacements.filter((p) => {
+                            const sameOriginList = roundPlacements.filter(x => x.startBossIndex === p.startBossIndex);
+                            const isFinal = sameOriginList.length > 0 && sameOriginList[sameOriginList.length - 1].id === p.id;
+                            const effectiveSpan = isFinal ? p.spanCount : 1;
+                            return p.startBossIndex < bossIdx && (p.startBossIndex + effectiveSpan) > bossIdx;
+                          });
+
+                          return `
+                            <td class="p-2.5 border-r last:border-r-0 border-slate-800/80 min-h-[120px]">
+                              <div class="space-y-2">
+                                ${spanningAcross.map(sp => {
+                                  const spTeam = state.teams.find(t => t.id === sp.teamId);
+                                  return `
+                                    <div class="px-2.5 py-1.5 rounded-lg bg-sky-500/15 border border-dashed border-sky-400/60 text-[11px] text-sky-200">
+                                      ↳ Continued: <strong>${spTeam ? spTeam.name : 'Team'}</strong>
+                                    </div>
+                                  `;
+                                }).join('')}
+
+                                ${startingHere.map((p, idx) => renderAssignedTeamCard(p, true, idx === startingHere.length - 1)).join('')}
+
+                                ${startingHere.length === 0 && spanningAcross.length === 0 ? `
+                                  <div class="py-4 text-center text-[11px] text-slate-600">—</div>
+                                ` : ''}
+                              </div>
+                            </td>
+                          `;
+                        }).join('')}
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // 10. TAB 5: EXPORTING / IMPORTING (NO "Share as Image" BUTTON HERE)
+    // =========================================================================
+    function buildExportPayload() {
+      const payload = {
+        app: 'WuWa_Endstate_Matrix_Planner',
+        version: '3.8',
+        exportedAt: new Date().toISOString(),
+        includedTabs: { ...state.exportSelections },
+        data: {}
+      };
+      if (state.exportSelections.tab1) {
+        payload.data.ownedIds = [...state.ownedIds];
+      }
+      if (state.exportSelections.tab2) {
+        payload.data.teams = JSON.parse(JSON.stringify(state.teams));
+      }
+      if (state.exportSelections.tab3) {
+        payload.data.roundsCount = state.roundsCount;
+        payload.data.placements = state.placements.map(p => ({
+          id: p.id,
+          teamId: p.teamId,
+          roundIndex: p.roundIndex,
+          startBossIndex: p.startBossIndex,
+          spanCount: p.spanCount,
+          score: state.exportSelections.tab4 ? (p.score || 0) : 0
+        }));
+      } else if (state.exportSelections.tab4) {
+        payload.data.scoresOnly = state.placements.map(p => ({
+          id: p.id,
+          teamId: p.teamId,
+          score: p.score || 0
+        }));
+      }
+      return payload;
+    }
+
+    function downloadExportJSON() {
+      const payload = buildExportPayload();
+      const jsonStr = JSON.stringify(payload, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `wuwa-v38-matrix-plan-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Export JSON file downloaded!');
+    }
+
+    function copyExportCode() {
+      const payload = buildExportPayload();
+      const jsonStr = JSON.stringify(payload);
+      const textarea = document.getElementById('exportCodeOutput');
+      if (textarea) {
+        textarea.value = jsonStr;
+        textarea.select();
+        document.execCommand('copy');
+        showToast('Export data copied to clipboard!');
+      }
+    }
+
+    function applyImportedData(rawString) {
+      try {
+        const parsed = JSON.parse(rawString.trim());
+        if (!parsed || parsed.app !== 'WuWa_Endstate_Matrix_Planner' || !parsed.data) {
+          showToast('Invalid export format. Please use a valid WuWa Matrix JSON export.');
+          return;
+        }
+        const d = parsed.data;
+        if (Array.isArray(d.ownedIds)) {
+          state.ownedIds = d.ownedIds.filter(id => CHAR_MAP[id]);
+        }
+        if (Array.isArray(d.teams)) {
+          state.teams = d.teams;
+        }
+        if (typeof d.roundsCount === 'number') {
+          state.roundsCount = Math.max(1, d.roundsCount);
+        }
+        if (Array.isArray(d.placements)) {
+          state.placements = d.placements;
+        } else if (Array.isArray(d.scoresOnly)) {
+          d.scoresOnly.forEach(sc => {
+            const match = state.placements.find(p => p.id === sc.id || p.teamId === sc.teamId);
+            if (match) match.score = Number(sc.score) || 0;
+          });
+        }
+        saveState();
+        renderApp();
+        showToast('Settings imported and applied successfully!');
+      } catch (e) {
+        showToast('Could not parse JSON data. Check formatting and try again.');
+      }
+    }
+
+    function handleImportFileUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const text = e.target?.result;
+        if (typeof text === 'string') {
+          const box = document.getElementById('importDataInput');
+          if (box) box.value = text;
+          applyImportedData(text);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function renderTab5() {
+      const previewJson = JSON.stringify(buildExportPayload(), null, 2);
+
+      return `
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- EXPORT PANEL -->
+          <div class="p-5 rounded-2xl bg-[#121722] border border-slate-800 space-y-4 shadow-xl">
+            <div>
+              <h2 class="text-base sm:text-lg font-display font-bold text-white">Export Planner Settings</h2>
+              <p class="text-xs text-slate-400 mt-0.5">
+                Choose which tabs to include in your export file or share code so another Rover can load your setup.
+              </p>
+            </div>
+
+            <div class="space-y-2 bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
+              <div class="text-xs font-bold text-slate-300 mb-1">Select Tabs to Include:</div>
+              ${[
+                { key: 'tab1', label: 'Tab 1: Character Checklist (Owned Resonators)' },
+                { key: 'tab2', label: 'Tab 2: Team Formation (Created Squads)' },
+                { key: 'tab3', label: 'Tab 3: Round Planning (Boss & Round Schedule)' },
+                { key: 'tab4', label: 'Tab 4: Results (Earned Scores)' }
+              ].map(opt => `
+                <label class="flex items-center gap-2.5 text-xs text-slate-200 cursor-pointer select-none py-1">
+                  <input
+                    type="checkbox"
+                    ${state.exportSelections[opt.key] ? 'checked' : ''}
+                    onchange="state.exportSelections['${opt.key}'] = this.checked; saveState(); renderApp();"
+                    class="rounded bg-slate-800 border-slate-600 text-amber-500 focus:ring-amber-500"
+                  />
+                  <span>${opt.label}</span>
+                </label>
+              `).join('')}
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2.5">
+              <button onclick="downloadExportJSON()" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition shadow-lg shadow-amber-500/20">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                Download .JSON File
+              </button>
+              <button onclick="copyExportCode()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 font-semibold text-xs flex items-center gap-1.5 transition">
+                <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                Copy Export Code
+              </button>
+            </div>
+
+            <div>
+              <label class="text-[11px] font-semibold text-slate-400 block mb-1">Generated Export Data Preview:</label>
+              <textarea
+                id="exportCodeOutput"
+                readonly
+                rows="7"
+                class="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] text-slate-300 focus:outline-none"
+              >${previewJson}</textarea>
+            </div>
+          </div>
+
+          <!-- IMPORT PANEL -->
+          <div class="p-5 rounded-2xl bg-[#121722] border border-slate-800 space-y-4 shadow-xl flex flex-col justify-between">
+            <div class="space-y-4">
+              <div>
+                <h2 class="text-base sm:text-lg font-display font-bold text-white">Import Planner Settings</h2>
+                <p class="text-xs text-slate-400 mt-0.5">
+                  Upload a <code>.json</code> export file or paste an export code below to overwrite matching tabs with the imported configuration.
+                </p>
+              </div>
+
+              <label class="block p-4 rounded-xl border-2 border-dashed border-slate-700 hover:border-amber-500/60 bg-slate-950/60 text-center cursor-pointer transition">
+                <input type="file" accept=".json,application/json" onchange="handleImportFileUpload(event)" class="hidden" />
+                <div class="text-xs font-bold text-amber-300">Click to Upload Exported .JSON File</div>
+                <div class="text-[11px] text-slate-500 mt-0.5">Automatically imports and updates your active planner</div>
+              </label>
+
+              <div>
+                <label class="text-[11px] font-semibold text-slate-400 block mb-1">Or Paste Export Data Here:</label>
+                <textarea
+                  id="importDataInput"
+                  rows="7"
+                  placeholder='Paste exported JSON data here...'
+                  class="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 font-mono text-[11px] text-white placeholder-slate-600 focus:outline-none focus:border-amber-500"
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="pt-2">
+              <button
+                onclick="applyImportedData(document.getElementById('importDataInput').value)"
+                class="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition shadow-lg shadow-emerald-500/20"
+              >
+                Apply &amp; Import Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // 11. SHARE AS IMAGE GENERATOR (PREVIEW MODAL BEFORE DOWNLOAD, TABS 1-4)
+    // =========================================================================
+    let latestSnapshotDataUrl = '';
+
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    function generateTabSnapshot() {
+      const canvas = document.createElement('canvas');
+      const W = 1140;
+      const H = 680;
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
+
+      const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+      bgGrad.addColorStop(0, '#0b0e14');
+      bgGrad.addColorStop(1, '#141c2b');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.strokeStyle = '#263147';
+      ctx.lineWidth = 3;
+      roundRect(ctx, 14, 14, W - 28, H - 28, 20);
+      ctx.stroke();
+
+      ctx.fillStyle = '#eab308';
+      ctx.font = 'bold 14px Inter, sans-serif';
+      ctx.fillText('WUTHERING WAVES v3.8 • ENDSTATE MATRIX (ADVERSITY VANGUARD)', 40, 52);
+
+      const tabNames = {
+        1: 'Tab 1 Summary: Owned Resonator Checklist',
+        2: 'Tab 2 Summary: Boss & Flex Team Formations',
+        3: 'Tab 3 Summary: Round-by-Round Deployment Plan',
+        4: 'Tab 4 Summary: Matrix Score & Top 3 Teams'
+      };
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px Rajdhani, sans-serif';
+      ctx.fillText(tabNames[state.activeTab] || 'Matrix Summary', 40, 84);
+
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(40, 102);
+      ctx.lineTo(W - 40, 102);
+      ctx.stroke();
+
+      if (state.activeTab === 1) {
+        const owned = state.ownedIds.map(id => CHAR_MAP[id]).filter(Boolean);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '15px Inter, sans-serif';
+        ctx.fillText(`Total Owned Resonators: ${owned.length} / ${CHARACTERS.length}`, 40, 130);
+
+        const attrs = Object.keys(ATTRIBUTES);
+        attrs.forEach((attr, idx) => {
+          const list = owned.filter(c => c.attribute === attr);
+          const colX = 40 + (idx % 3) * 358;
+          const rowY = 155 + Math.floor(idx / 3) * 245;
+
+          ctx.fillStyle = '#181f2e';
+          roundRect(ctx, colX, rowY, 338, 225, 14);
+          ctx.fill();
+          ctx.strokeStyle = ATTRIBUTES[attr].hex + '66';
+          ctx.stroke();
+
+          ctx.fillStyle = ATTRIBUTES[attr].hex;
+          ctx.font = 'bold 16px Inter, sans-serif';
+          ctx.fillText(`${attr} (${list.length})`, colX + 16, rowY + 28);
+
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '13px Inter, sans-serif';
+          list.slice(0, 8).forEach((c, i) => {
+            const uses = getMaxUses(c);
+            const suffix = c.id === 'lucilla' ? '2 Uses +1 Season' : `${uses} Use${uses > 1 ? 's' : ''}`;
+            ctx.fillText(`• ${c.name} (${suffix})`, colX + 16, rowY + 54 + i * 21);
+          });
+          if (list.length > 8) {
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillText(`+ ${list.length - 8} more...`, colX + 16, rowY + 220);
+          }
+        });
+      } else if (state.activeTab === 2) {
+        const activeTeams = state.teams.filter(isTeamComplete).slice(0, 6);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '15px Inter, sans-serif';
+        ctx.fillText(`Formed Teams: ${activeTeams.length}`, 40, 130);
+
+        activeTeams.forEach((team, idx) => {
+          const colX = 40 + (idx % 2) * 535;
+          const rowY = 150 + Math.floor(idx / 2) * 160;
+          const boss = SEASON_BOSSES.find(b => b.id === team.bossCategory);
+          const evalInfo = evaluateTeamAgainstBosses(team, boss ? [boss] : []);
+
+          ctx.fillStyle = '#181f2e';
+          roundRect(ctx, colX, rowY, 515, 142, 14);
+          ctx.fill();
+          ctx.strokeStyle = evalInfo.hasResistanceWarning ? '#f97316' : '#334155';
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 16px Inter, sans-serif';
+          ctx.fillText(`${team.name} (${boss ? boss.name : 'Filler / Flex'})`, colX + 16, rowY + 28);
+
+          const chars = getTeamCharacters(team);
+          chars.forEach((c, ci) => {
+            ctx.fillStyle = ATTRIBUTES[c.attribute].hex;
+            ctx.font = 'bold 13px Inter, sans-serif';
+            ctx.fillText(`${c.name} [${c.attribute}]`, colX + 16 + ci * 164, rowY + 62);
+          });
+
+          ctx.fillStyle = evalInfo.matchedMechanics.length > 0 ? '#34d399' : '#94a3b8';
+          ctx.font = '13px Inter, sans-serif';
+          ctx.fillText(`Mechanics: ${evalInfo.teamMechs.join(' • ') || 'None'}`, colX + 16, rowY + 96);
+
+          if (evalInfo.hasResistanceWarning) {
+            ctx.fillStyle = '#fb923c';
+            ctx.fillText('! Warning: Resisted damage type present', colX + 16, rowY + 122);
+          }
+        });
+      } else if (state.activeTab === 3) {
+        ALL_ROUND_COLS.forEach((b, bi) => {
+          const bx = 175 + bi * 188;
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 15px Inter, sans-serif';
+          ctx.fillText(b.name, bx, 134);
+          ctx.fillStyle = b.mechanic ? '#34d399' : '#94a3b8';
+          ctx.font = '11px Inter, sans-serif';
+          ctx.fillText(b.mechanic ? `${b.mechanic} | Resists ${b.resistAttr}` : 'No Mechanics', bx, 152);
+        });
+
+        for (let r = 0; r < Math.min(state.roundsCount, 4); r++) {
+          const ry = 175 + r * 115;
+          ctx.fillStyle = '#151c2b';
+          roundRect(ctx, 40, ry, W - 80, 100, 12);
+          ctx.fill();
+
+          ctx.fillStyle = '#facc15';
+          ctx.font = 'bold 16px Inter, sans-serif';
+          ctx.fillText(`Round ${r + 1}`, 56, ry + 36);
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '12px Inter, sans-serif';
+          ctx.fillText(getRoundMultiplierLabel(r), 56, ry + 56);
+
+          const rPlaces = state.placements.filter(p => p.roundIndex === r);
+          rPlaces.forEach((p, pi) => {
+            const team = state.teams.find(t => t.id === p.teamId);
+            if (!team) return;
+            const px = 175 + p.startBossIndex * 188;
+            const pw = p.spanCount * 180;
+            ctx.fillStyle = '#1e293b';
+            roundRect(ctx, px, ry + 12 + (pi % 2) * 40, pw, 34, 8);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 11px Inter, sans-serif';
+            const names = getTeamCharacters(team).map(c => c.name).join(' / ');
+            ctx.fillText(`${team.name}: ${names}`, px + 8, ry + 33 + (pi % 2) * 40);
+          });
+        }
+      } else if (state.activeTab === 4) {
+        const { totalScore, top3 } = getResultsAnalytics();
+        ctx.fillStyle = '#eab308';
+        ctx.font = 'bold 15px Inter, sans-serif';
+        ctx.fillText('TOTAL ENDSTATE MATRIX SCORE', 40, 138);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 48px Rajdhani, sans-serif';
+        ctx.fillText(`${totalScore.toLocaleString()} PTS`, 40, 185);
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 16px Inter, sans-serif';
+        ctx.fillText('TOP 3 HIGHEST SCORING TEAMS', 40, 235);
+
+        top3.forEach((entry, i) => {
+          const y = 255 + i * 115;
+          ctx.fillStyle = '#181f2e';
+          roundRect(ctx, 40, y, W - 80, 98, 14);
+          ctx.fill();
+          ctx.strokeStyle = i === 0 ? '#eab308' : '#334155';
+          ctx.stroke();
+
+          ctx.fillStyle = i === 0 ? '#facc15' : '#e2e8f0';
+          ctx.font = 'bold 20px Inter, sans-serif';
+          ctx.fillText(`#${i + 1}  ${entry.team.name} — ${entry.score.toLocaleString()} pts`, 62, y + 36);
+
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '14px Inter, sans-serif';
+          const rosterText = getTeamCharacters(entry.team).map(c => `${c.name} (${c.attribute})`).join('  •  ');
+          ctx.fillText(`Round ${entry.roundNum} (${entry.bossNames})   |   ${rosterText}`, 62, y + 68);
+        });
+      }
+
+      ctx.fillStyle = '#64748b';
+      ctx.font = '12px Inter, sans-serif';
+      ctx.fillText('Generated with Wuthering Waves v3.8 Endstate Matrix Planner', 40, H - 30);
+
+      latestSnapshotDataUrl = canvas.toDataURL('image/png');
+      const img = document.getElementById('snapshotPreviewImg');
+      img.src = latestSnapshotDataUrl;
+      document.getElementById('snapshotStatusMsg').textContent = '';
+
+      const modal = document.getElementById('snapshotModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeSnapshotModal() {
+      const modal = document.getElementById('snapshotModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function downloadSnapshotPNG() {
+      if (!latestSnapshotDataUrl) return;
+      const a = document.createElement('a');
+      a.href = latestSnapshotDataUrl;
+      a.download = `wuwa-v38-matrix-tab${state.activeTab}-summary.png`;
+      a.click();
+      document.getElementById('snapshotStatusMsg').textContent = 'PNG downloaded!';
+    }
+
+    async function copySnapshotToClipboard() {
+      try {
+        const res = await fetch(latestSnapshotDataUrl);
+        const blob = await res.blob();
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        document.getElementById('snapshotStatusMsg').textContent = 'Image copied to clipboard!';
+      } catch (err) {
+        document.getElementById('snapshotStatusMsg').textContent = 'Right-click the preview image to copy, or use Download PNG.';
+      }
+    }
+
+    // =========================================================================
+    // 12. MAIN RENDER LOOP & INITIALIZATION
+    // =========================================================================
+    function renderApp() {
+      renderNavTabs();
+      const container = document.getElementById('appContainer');
+      if (!container) return;
+      try {
+        switch (state.activeTab) {
+          case 1: container.innerHTML = renderTab1(); break;
+          case 2: container.innerHTML = renderTab2(); break;
+          case 3: container.innerHTML = renderTab3(); break;
+          case 4: container.innerHTML = renderTab4(); break;
+          case 5: container.innerHTML = renderTab5(); break;
+          default: container.innerHTML = renderTab1();
+        }
+      } catch (err) {
+        console.error('Error rendering tab ' + state.activeTab + ':', err);
+        container.innerHTML = `
+          <div class="p-6 rounded-2xl bg-rose-950/40 border border-rose-700/60 text-sm text-rose-200 space-y-3">
+            <div class="font-bold text-base text-white">Recovered from unexpected state in Tab ${state.activeTab}</div>
+            <p class="text-xs text-rose-200/90">Error details: ${String(err && err.message ? err.message : err)}</p>
+            <button onclick="confirmResetAll()" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs">
+              Reset Saved State &amp; Reload
+            </button>
+          </div>
+        `;
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      renderApp();
+      openWelcomeModal(false);
+    });
+  </script>
+</body>
+</html>

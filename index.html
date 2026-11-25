@@ -2047,6 +2047,10 @@
 
       const prevCharId = team.slots[slotIndex];
       team.slots[slotIndex] = charId;
+      if (slotIndex === 0) {
+        team.name = `${char.name} Team`;
+        team.customNamed = false;
+      }
       if (!team.modes) team.modes = {};
       if (prevCharId && prevCharId !== charId) {
         delete team.modes[prevCharId];
@@ -2085,6 +2089,9 @@
       if (!team) return;
       const oldId = team.slots[slotIndex];
       team.slots[slotIndex] = null;
+      if (slotIndex === 0 && !team.customNamed) {
+        team.name = 'Team';
+      }
       if (oldId && team.modes) delete team.modes[oldId];
       saveState();
       renderApp();
@@ -2126,10 +2133,17 @@
       showToast('Team removed.');
     }
 
+    function getMainDpsTeamName(team) {
+      const firstCharId = team && Array.isArray(team.slots) ? team.slots[0] : null;
+      const firstChar = firstCharId ? CHAR_MAP[firstCharId] : null;
+      return firstChar ? `${firstChar.name} Team` : 'Team';
+    }
+
     function renameTeam(teamId, newName) {
       const team = state.teams.find(t => t.id === teamId);
       if (team && newName.trim()) {
         team.name = newName.trim();
+        team.customNamed = true;
         saveState();
       }
     }
@@ -2511,19 +2525,27 @@
       return state.placements.some(p => p.teamId === teamId);
     }
 
-    function getEffectivePlacementSpan(placement, roundPlacements) {
-      const sameOriginList = roundPlacements.filter(x => x.startBossIndex === placement.startBossIndex);
-      const isFinal = sameOriginList.length > 0 && sameOriginList[sameOriginList.length - 1].id === placement.id;
-      return isFinal ? placement.spanCount : 1;
+    const COLS_PER_ROUND = ALL_ROUND_COLS.length;
+
+    function getPlacementStartLinear(placement) {
+      return (Number(placement.roundIndex) || 0) * COLS_PER_ROUND + (Number(placement.startBossIndex) || 0);
     }
 
-    function getBlockingExtensionForSlot(roundIndex, bossIndex) {
-      const roundPlacements = state.placements.filter(p => p.roundIndex === roundIndex);
-      for (const p of roundPlacements) {
-        const effectiveSpan = getEffectivePlacementSpan(p, roundPlacements);
+    function getEffectivePlacementSpan(placement) {
+      const sameOriginList = state.placements.filter(
+        x => x.roundIndex === placement.roundIndex && x.startBossIndex === placement.startBossIndex
+      );
+      const isFinal = sameOriginList.length > 0 && sameOriginList[sameOriginList.length - 1].id === placement.id;
+      return isFinal ? Math.max(1, Number(placement.spanCount) || 1) : 1;
+    }
+
+    function getBlockingExtensionForLinearSlot(targetLinear) {
+      for (const p of state.placements) {
+        const effectiveSpan = getEffectivePlacementSpan(p);
         if (effectiveSpan > 1) {
-          const endBossIndex = p.startBossIndex + effectiveSpan - 1;
-          if (bossIndex > p.startBossIndex && bossIndex < endBossIndex) {
+          const startLinear = getPlacementStartLinear(p);
+          const endLinear = startLinear + effectiveSpan - 1;
+          if (targetLinear > startLinear && targetLinear < endLinear) {
             return p;
           }
         }
@@ -2541,7 +2563,8 @@
         showToast(`${team.name} is already assigned! Each set team can only be used once.`);
         return;
       }
-      const blockingPlacement = getBlockingExtensionForSlot(roundIndex, startBossIndex);
+      const targetLinear = roundIndex * COLS_PER_ROUND + startBossIndex;
+      const blockingPlacement = getBlockingExtensionForLinearSlot(targetLinear);
       if (blockingPlacement) {
         const blockingTeam = state.teams.find(t => t.id === blockingPlacement.teamId);
         showToast(`Blocked: Already cleared by ${blockingTeam ? blockingTeam.name : 'extended team'}. Only the end slot of an extension can accept more teams.`);
@@ -2590,26 +2613,36 @@
     function updatePlacementSpan(placementId, delta) {
       const p = state.placements.find(item => item.id === placementId);
       if (!p) return;
-      const roundPlacements = state.placements.filter(item => item.roundIndex === p.roundIndex);
-      const cellPlacements = roundPlacements.filter(item => item.startBossIndex === p.startBossIndex);
+      const cellPlacements = state.placements.filter(
+        item => item.roundIndex === p.roundIndex && item.startBossIndex === p.startBossIndex
+      );
       const isFinalInCell = cellPlacements.length > 0 && cellPlacements[cellPlacements.length - 1].id === p.id;
       if (delta > 0 && !isFinalInCell) {
         showToast('Only the final team clearing a boss can extend to consecutive bosses.');
         return;
       }
-      const maxSpan = ALL_ROUND_COLS.length - p.startBossIndex;
-      const nextSpan = Math.max(1, Math.min(maxSpan, p.spanCount + delta));
+      const startLinear = getPlacementStartLinear(p);
+      const nextSpan = Math.max(1, (Number(p.spanCount) || 1) + delta);
       if (delta > 0 && nextSpan > p.spanCount) {
-        const currentEndBoss = p.startBossIndex + p.spanCount - 1;
-        if (currentEndBoss > p.startBossIndex) {
-          const hasTeamsInCurrentEnd = roundPlacements.some(item => item.startBossIndex === currentEndBoss);
+        const currentEndLinear = startLinear + p.spanCount - 1;
+        if (currentEndLinear > startLinear) {
+          const hasTeamsInCurrentEnd = state.placements.some(
+            item => item.id !== p.id && getPlacementStartLinear(item) === currentEndLinear
+          );
           if (hasTeamsInCurrentEnd) {
-            showToast(`Cannot extend past ${ALL_ROUND_COLS[currentEndBoss].name} while teams are assigned in that slot.`);
+            const endRound = Math.floor(currentEndLinear / COLS_PER_ROUND) + 1;
+            const endBoss = ALL_ROUND_COLS[currentEndLinear % COLS_PER_ROUND];
+            showToast(`Cannot extend past Round ${endRound} (${endBoss.name}) while teams are assigned in that slot.`);
             return;
           }
         }
       }
       p.spanCount = nextSpan;
+      const newEndLinear = startLinear + p.spanCount - 1;
+      const neededRounds = Math.floor(newEndLinear / COLS_PER_ROUND) + 1;
+      if (neededRounds > state.roundsCount) {
+        state.roundsCount = neededRounds;
+      }
       saveState();
       renderApp();
     }
@@ -2648,13 +2681,13 @@
       if (!team) return '';
 
       const effectiveSpan = isFinalInCell ? placement.spanCount : 1;
-      const coveredBosses = ALL_ROUND_COLS.slice(
-        placement.startBossIndex,
-        placement.startBossIndex + effectiveSpan
-      );
+      const startLinear = getPlacementStartLinear(placement);
+      const coveredBosses = Array.from({ length: effectiveSpan }).map((_, offset) => {
+        const lin = startLinear + offset;
+        return ALL_ROUND_COLS[lin % COLS_PER_ROUND];
+      });
       const evalInfo = evaluateTeamAgainstBosses(team, coveredBosses);
       const chars = getTeamCharacters(team);
-      const maxSpan = ALL_ROUND_COLS.length - placement.startBossIndex;
 
       return `
         <div class="rounded-xl p-2.5 border transition shadow-md ${
@@ -2745,11 +2778,10 @@
                     ${effectiveSpan <= 1 ? 'disabled' : ''}
                     class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-35 text-slate-200 font-semibold"
                   >− Shrink</button>
-                  <span class="px-1.5 font-bold text-sky-300">${effectiveSpan} Boss${effectiveSpan > 1 ? 'es' : ''}</span>
+                  <span class="px-1.5 font-bold text-sky-300">${effectiveSpan} Slot${effectiveSpan > 1 ? 's' : ''}</span>
                   <button
                     onclick="updatePlacementSpan('${placement.id}', 1)"
-                    ${effectiveSpan >= maxSpan ? 'disabled' : ''}
-                    class="px-2 py-0.5 rounded bg-sky-500/20 hover:bg-sky-500/30 disabled:opacity-35 text-sky-300 border border-sky-500/30 font-semibold"
+                    class="px-2 py-0.5 rounded bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 font-semibold"
                   >Extend →</button>
                 </div>
               ` : `
@@ -2941,14 +2973,17 @@
                         </div>
 
                         ${ALL_ROUND_COLS.map((boss, bossIdx) => {
+                          const cellLinear = roundIdx * COLS_PER_ROUND + bossIdx;
                           const startingHere = roundPlacements.filter(p => p.startBossIndex === bossIdx);
-                          const spanningAcross = roundPlacements.filter((p) => {
-                            const effectiveSpan = getEffectivePlacementSpan(p, roundPlacements);
-                            return p.startBossIndex < bossIdx && (p.startBossIndex + effectiveSpan) > bossIdx;
+                          const spanningAcross = state.placements.filter((p) => {
+                            const effectiveSpan = getEffectivePlacementSpan(p);
+                            const startLin = getPlacementStartLinear(p);
+                            return startLin < cellLinear && (startLin + effectiveSpan) > cellLinear;
                           });
                           const isBlockedMiddleSlot = spanningAcross.some((sp) => {
-                            const effectiveSpan = getEffectivePlacementSpan(sp, roundPlacements);
-                            return bossIdx < (sp.startBossIndex + effectiveSpan - 1);
+                            const effectiveSpan = getEffectivePlacementSpan(sp);
+                            const startLin = getPlacementStartLinear(sp);
+                            return cellLinear < (startLin + effectiveSpan - 1);
                           });
 
                           return `
@@ -2970,8 +3005,9 @@
                               <div class="space-y-2">
                                 ${spanningAcross.map(sp => {
                                   const spTeam = state.teams.find(t => t.id === sp.teamId);
-                                  const effectiveSpan = getEffectivePlacementSpan(sp, roundPlacements);
-                                  const isMiddleClear = bossIdx < (sp.startBossIndex + effectiveSpan - 1);
+                                  const effectiveSpan = getEffectivePlacementSpan(sp);
+                                  const startLin = getPlacementStartLinear(sp);
+                                  const isMiddleClear = cellLinear < (startLin + effectiveSpan - 1);
                                   return `
                                     <div class="px-2.5 py-1.5 rounded-lg ${
                                       isMiddleClear
@@ -3205,12 +3241,12 @@
                         </td>
 
                         ${ALL_ROUND_COLS.map((boss, bossIdx) => {
+                          const cellLinear = roundIdx * COLS_PER_ROUND + bossIdx;
                           const startingHere = roundPlacements.filter(p => p.startBossIndex === bossIdx);
-                          const spanningAcross = roundPlacements.filter((p) => {
-                            const sameOriginList = roundPlacements.filter(x => x.startBossIndex === p.startBossIndex);
-                            const isFinal = sameOriginList.length > 0 && sameOriginList[sameOriginList.length - 1].id === p.id;
-                            const effectiveSpan = isFinal ? p.spanCount : 1;
-                            return p.startBossIndex < bossIdx && (p.startBossIndex + effectiveSpan) > bossIdx;
+                          const spanningAcross = state.placements.filter((p) => {
+                            const effectiveSpan = getEffectivePlacementSpan(p);
+                            const startLin = getPlacementStartLinear(p);
+                            return startLin < cellLinear && (startLin + effectiveSpan) > cellLinear;
                           });
 
                           return `
@@ -3218,8 +3254,9 @@
                               <div class="space-y-2">
                                 ${spanningAcross.map(sp => {
                                   const spTeam = state.teams.find(t => t.id === sp.teamId);
-                                  const effectiveSpan = getEffectivePlacementSpan(sp, roundPlacements);
-                                  const isMiddleClear = bossIdx < (sp.startBossIndex + effectiveSpan - 1);
+                                  const effectiveSpan = getEffectivePlacementSpan(sp);
+                                  const startLin = getPlacementStartLinear(sp);
+                                  const isMiddleClear = cellLinear < (startLin + effectiveSpan - 1);
                                   return `
                                     <div class="px-2.5 py-1.5 rounded-lg ${
                                       isMiddleClear

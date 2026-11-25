@@ -2690,17 +2690,17 @@
       const chars = getTeamCharacters(team);
 
       return `
-        <div class="rounded-xl p-2.5 border transition shadow-md ${
+        <div class="rounded-xl ${isResultsMode ? 'p-2' : 'p-2.5'} border transition shadow-md ${
           evalInfo.hasResistanceWarning
             ? 'bg-orange-950/40 border-2 border-orange-500'
             : isFinalInCell
               ? 'bg-[#181f2e] border-emerald-500/45'
               : 'bg-[#181f2e] border-slate-700'
         }">
-          <div class="flex items-center justify-between gap-1.5 mb-2">
-            <div class="flex items-center gap-1.5 min-w-0">
-              <span class="font-bold text-xs text-white truncate">${team.name}</span>
-              <span class="text-[9.5px] font-bold px-1.5 py-0.2 rounded ${
+          <div class="flex items-center justify-between gap-1 ${isResultsMode ? 'mb-1.5' : 'mb-2'}">
+            <div class="flex items-center gap-1 min-w-0">
+              <span class="font-bold ${isResultsMode ? 'text-[11px]' : 'text-xs'} text-white truncate">${team.name}</span>
+              <span class="text-[9px] font-bold px-1 py-0.2 rounded ${
                 isFinalInCell
                   ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
                   : 'bg-slate-800 text-slate-400 border border-slate-700'
@@ -2708,8 +2708,8 @@
                 ${isFinalInCell ? 'Clears' : 'No Clear'}
               </span>
               ${isFinalInCell && effectiveSpan > 1 ? `
-                <span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40 shrink-0">
-                  Spans ${effectiveSpan} →
+                <span class="text-[9.5px] font-bold px-1 py-0.2 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40 shrink-0">
+                  ×${effectiveSpan} →
                 </span>
               ` : ''}
             </div>
@@ -2720,22 +2720,22 @@
           </div>
 
           <!-- Character Icons Row -->
-          <div class="flex items-center gap-1.5 mb-2">
+          <div class="flex items-center ${isResultsMode ? 'gap-1 mb-1.5' : 'gap-1.5 mb-2'}">
             ${chars.map(c => {
               const resistedBoss = hasDamageContribution(c) ? coveredBosses.find(b => b.resistAttr === c.attribute) : null;
               return `
-                <div class="relative flex items-center gap-1.5 bg-slate-900/90 border ${
+                <div class="relative flex items-center ${isResultsMode ? 'gap-1 p-1' : 'gap-1.5 p-1 pr-2'} bg-slate-900/90 border ${
                   resistedBoss ? 'border-orange-500 bg-orange-950/60' : 'border-slate-800'
-                } rounded-lg p-1 pr-2 min-w-0 flex-1">
-                  ${renderCharacterAvatarHTML(c, 'w-7 h-7')}
+                } rounded-lg min-w-0 flex-1" title="${c.name} (${c.attribute})">
+                  ${renderCharacterAvatarHTML(c, isResultsMode ? 'w-6 h-6' : 'w-7 h-7')}
                   <div class="min-w-0">
-                    <div class="text-[10px] font-semibold text-white truncate">${c.name}</div>
-                    <div class="text-[9px] ${resistedBoss ? 'text-orange-300 font-bold' : ATTRIBUTES[c.attribute].text}">${c.attribute}</div>
+                    <div class="text-[9.5px] font-semibold text-white truncate">${c.name}</div>
+                    <div class="text-[8.5px] truncate ${resistedBoss ? 'text-orange-300 font-bold' : ATTRIBUTES[c.attribute].text}">${c.attribute}</div>
                   </div>
                   ${resistedBoss ? `
                     <button
                       onclick="openResistModal('${c.name}', '${c.attribute}', '${resistedBoss.name}')"
-                      class="w-4 h-4 rounded-full bg-orange-500 text-slate-950 font-extrabold text-[10px] flex items-center justify-center shrink-0"
+                      class="w-3.5 h-3.5 rounded-full bg-orange-500 text-slate-950 font-extrabold text-[9px] flex items-center justify-center shrink-0"
                       title="Resisted damage type"
                     >!</button>
                   ` : ''}
@@ -2745,11 +2745,11 @@
           </div>
 
           <!-- Special Mechanics Badges -->
-          <div class="flex flex-wrap items-center gap-1 mb-2">
+          <div class="flex flex-wrap items-center gap-1 ${isResultsMode ? 'mb-1.5' : 'mb-2'}">
             ${evalInfo.teamMechs.map(m => {
               const matched = evalInfo.matchedMechanics.includes(m);
               return `
-                <span class="text-[10px] font-semibold px-1.5 py-0.2 rounded border ${
+                <span class="${isResultsMode ? 'text-[9px] px-1' : 'text-[10px] px-1.5'} font-semibold py-0.2 rounded border ${
                   matched
                     ? 'bg-emerald-500/25 text-emerald-300 border-emerald-400'
                     : 'bg-slate-900 text-slate-400 border-slate-800'
@@ -2761,9 +2761,9 @@
             ${evalInfo.hasResistanceWarning ? `
               <button
                 onclick="openResistModal('${evalInfo.resistedDetails[0].char.name}', '${evalInfo.resistedDetails[0].char.attribute}', '${evalInfo.resistedDetails[0].boss.name}')"
-                class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-orange-500/20 text-orange-300 border border-orange-500/50"
+                class="${isResultsMode ? 'text-[9px] px-1' : 'text-[10px] px-1.5'} font-bold py-0.2 rounded bg-orange-500/20 text-orange-300 border border-orange-500/50"
               >
-                ! Resisted damage type
+                ! Resisted
               </button>
             ` : ''}
           </div>
@@ -2789,8 +2789,8 @@
               `}
             </div>
           ` : `
-            <div class="pt-2 border-t border-slate-800/90 flex items-center justify-between gap-2">
-              <label class="text-[11px] font-semibold text-amber-300">Earned Score:</label>
+            <div class="pt-1.5 border-t border-slate-800/90 flex items-center justify-between gap-1.5">
+              <label class="text-[10px] font-semibold text-amber-300 shrink-0">Score:</label>
               <input
                 type="number"
                 min="0"
@@ -2798,7 +2798,7 @@
                 value="${placement.score || ''}"
                 placeholder="0"
                 oninput="updatePlacementScore('${placement.id}', this.value)"
-                class="w-28 px-2.5 py-1 rounded-lg bg-slate-950 border border-amber-500/50 text-right font-mono font-bold text-sm text-white focus:outline-none focus:border-amber-400"
+                class="w-24 min-w-0 px-2 py-0.5 rounded-lg bg-slate-950 border border-amber-500/50 text-right font-mono font-bold text-xs text-white focus:outline-none focus:border-amber-400"
               />
             </div>
           `}
@@ -3195,27 +3195,27 @@
             </div>
           ` : `
             <div class="rounded-2xl bg-[#121722] border border-slate-800 overflow-x-auto shadow-xl">
-              <table class="w-full min-w-[1120px] border-collapse">
+              <table class="w-full lg:table-fixed min-w-[900px] lg:min-w-0 border-collapse">
                 <thead>
                   <tr class="bg-[#161d2b] border-b border-slate-800">
-                    <th class="w-32 p-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400 border-r border-slate-800">
+                    <th class="w-24 p-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400 border-r border-slate-800">
                       Round
                     </th>
                     ${ALL_ROUND_COLS.map(boss => `
-                      <th class="p-3 text-left border-r last:border-r-0 border-slate-800 w-1/5">
-                        <div class="font-display font-bold text-base text-white">${boss.name}</div>
-                        <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                      <th class="p-2.5 text-left border-r last:border-r-0 border-slate-800 w-[calc((100%-6rem)/5)]">
+                        <div class="font-display font-bold text-sm xl:text-base text-white truncate">${boss.name}</div>
+                        <div class="flex flex-wrap items-center gap-1 mt-1">
                           ${boss.resistAttr ? `
-                            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-300 border border-orange-500/30">
+                            <span class="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-orange-500/15 text-orange-300 border border-orange-500/30">
                               Resists ${boss.resistAttr}
                             </span>
                           ` : ''}
                           ${boss.mechanic ? `
-                            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                            <span class="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
                               ${boss.mechanic}
                             </span>
                           ` : `
-                            <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                            <span class="text-[9.5px] font-semibold px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700">
                               No Mechanics
                             </span>
                           `}
@@ -3231,12 +3231,12 @@
 
                     return `
                       <tr class="border-b border-slate-800/80 align-top">
-                        <td class="p-3 bg-[#141a26] border-r border-slate-800">
-                          <div class="font-display font-bold text-base text-amber-300">Round ${roundIdx + 1}</div>
-                          <div class="text-[11px] font-semibold text-slate-400 mt-0.5">${getRoundMultiplierLabel(roundIdx)}</div>
-                          <div class="mt-2 pt-2 border-t border-slate-800 text-[11px]">
-                            <span class="text-slate-500 block">Round Subtotal:</span>
-                            <strong class="text-white font-mono">${roundTotal.toLocaleString()}</strong>
+                        <td class="p-2.5 bg-[#141a26] border-r border-slate-800">
+                          <div class="font-display font-bold text-sm xl:text-base text-amber-300">Round ${roundIdx + 1}</div>
+                          <div class="text-[10px] font-semibold text-slate-400 mt-0.5 leading-tight">${getRoundMultiplierLabel(roundIdx)}</div>
+                          <div class="mt-2 pt-2 border-t border-slate-800 text-[10px]">
+                            <span class="text-slate-500 block">Subtotal:</span>
+                            <strong class="text-white font-mono text-xs">${roundTotal.toLocaleString()}</strong>
                           </div>
                         </td>
 
@@ -3250,22 +3250,22 @@
                           });
 
                           return `
-                            <td class="p-2.5 border-r last:border-r-0 border-slate-800/80 min-h-[120px]">
-                              <div class="space-y-2">
+                            <td class="p-1.5 xl:p-2 border-r last:border-r-0 border-slate-800/80 min-h-[120px] align-top">
+                              <div class="space-y-1.5">
                                 ${spanningAcross.map(sp => {
                                   const spTeam = state.teams.find(t => t.id === sp.teamId);
                                   const effectiveSpan = getEffectivePlacementSpan(sp);
                                   const startLin = getPlacementStartLinear(sp);
                                   const isMiddleClear = cellLinear < (startLin + effectiveSpan - 1);
                                   return `
-                                    <div class="px-2.5 py-1.5 rounded-lg ${
+                                    <div class="px-2 py-1 rounded-lg ${
                                       isMiddleClear
                                         ? 'bg-emerald-500/15 border border-emerald-500/45 text-emerald-200'
                                         : 'bg-sky-500/15 border border-dashed border-sky-400/60 text-sky-200'
-                                    } text-[11px] flex items-center justify-between gap-1.5">
-                                      <span class="truncate">↳ Continued: <strong>${spTeam ? spTeam.name : 'Team'}</strong></span>
+                                    } text-[10px] flex items-center justify-between gap-1">
+                                      <span class="truncate">↳ <strong>${spTeam ? spTeam.name : 'Team'}</strong></span>
                                       ${isMiddleClear ? `
-                                        <span class="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shrink-0">
+                                        <span class="text-[9px] font-bold px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shrink-0">
                                           Clears
                                         </span>
                                       ` : ''}
